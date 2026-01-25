@@ -96,6 +96,7 @@ Based on [Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-C
 - [x] Human dashboard
 - [x] Persona system for quality assurance
 - [x] Context loading rules
+- [x] Auto skill generation (creates reusable skills from patterns)
 
 ### Future
 - [ ] MCP integration (Notion, Slack, Google Drive, GitHub, etc.)

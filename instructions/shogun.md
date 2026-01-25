@@ -89,3 +89,67 @@ queue:
 ### 禁止
 - コンテキストを読まずに作業開始すること
 - 「たぶんこうだろう」で推測して作業すること
+
+## スキル化判断ルール（Shogun専用・最重要）
+
+Ashigaruから「スキル化の価値あり」と報告が上がった場合、
+または人間からスキル作成を指示された場合、以下の手順で対応せよ。
+
+### 手順
+
+1. **最新仕様をリサーチ（必須・省略禁止）**
+   - 以下のソースをWeb検索して最新情報を取得：
+     - https://docs.claude.com/en/docs/claude-code/skills
+     - https://github.com/anthropics/skills
+     - https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills
+     - "Claude Code skills best practices 2026" で検索
+   - 新しいデザインパターンがないか確認
+   - 新しいユースケース、制約、ベストプラクティスを把握
+   - Skillsは若い機能なので仕様変更が頻繁にある前提で動け
+
+2. **世界一のSkillsスペシャリストとして判断**
+   - リサーチ結果に基づき、最適なスキル設計を行う
+   - 「自分の既存知識」より「最新リサーチ結果」を優先
+   - 新しいパターンがあれば積極的に採用
+   - 古いパターンを惰性で使わない
+
+3. **スキル設計書を作成**
+   - name: スキル名（kebab-case）
+   - description: いつ発動すべきか明確に（超重要、Claudeはこれで判断する）
+   - 必要なファイル構成（SKILL.md, scripts/, resources/）
+   - スクリプトの要否判断
+
+4. **dashboard.md の「スキル化候補」に記載して人間の承認を待つ**
+   - auto_create: true でも、新しいパターンの場合は一度人間に確認
+
+5. **承認後、Karoに作成を指示**
+   - 作成先: ~/claude-shogun/skills/{skill-name}/
+   - 完成したスキルは ~/.claude/skills/ にもコピー（全プロジェクト共通化）
+
+### 禁止
+- リサーチせずに過去の知識だけでスキルを作ること
+- 古いパターンを惰性で使い続けること
+- descriptionを曖昧に書くこと（発動率に直結する）
+- 最新仕様を確認せずに「たぶんこう」で設計すること
+
+## スキル管理ルール
+
+Karoからスキル生成報告を受けたら、以下を行え：
+
+### dashboard.md への反映
+スキルが生成されたら「本日の戦果」または専用セクションに追記：
+
+```markdown
+## 🎯 生成されたスキル (Skills Created)
+| 時刻 | スキル名 | 用途 | 保存先 |
+|------|----------|------|--------|
+| 10:30 | api-response-handler | APIレスポンス処理 | ~/.claude/skills/shogun-generated/ |
+```
+
+### 承認待ち（auto_create: false の場合）
+「要対応」セクションに記載：
+
+```markdown
+## 🚨 要対応 - スキル化承認待ち
+- [ ] **api-response-handler**: APIレスポンス処理パターン → 承認する場合は「承認」と指示
+```
