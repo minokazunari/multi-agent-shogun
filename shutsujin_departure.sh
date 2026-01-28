@@ -154,6 +154,10 @@ tmux kill-session -t shogun 2>/dev/null && log_info "  └─ shogun本陣、撤
 # STEP 2: 報告ファイルリセット
 # ═══════════════════════════════════════════════════════════════════════════════
 log_info "📜 前回の軍議記録を破棄中..."
+
+# queue/reports ディレクトリが存在しない場合は作成
+[ -d ./queue/reports ] || mkdir -p ./queue/reports
+
 for i in {1..8}; do
     cat > ./queue/reports/ashigaru${i}_report.yaml << EOF
 worker_id: ashigaru${i}
@@ -426,8 +430,16 @@ NINJA_EOF
     echo -e "                               \033[0;36m[ASCII Art: syntax-samurai/ryu - CC0 1.0 Public Domain]\033[0m"
     echo ""
 
-    echo "  Claude Code の起動を待機中（15秒）..."
-    sleep 15
+    echo "  Claude Code の起動を待機中（最大30秒）..."
+
+    # 将軍の起動を確認（最大30秒待機）
+    for i in {1..30}; do
+        if tmux capture-pane -t shogun -p | grep -q "bypass permissions"; then
+            echo "  └─ 将軍の Claude Code 起動確認完了（${i}秒）"
+            break
+        fi
+        sleep 1
+    done
 
     # 将軍に指示書を読み込ませる
     log_info "  └─ 将軍に指示書を伝達中..."

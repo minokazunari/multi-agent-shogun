@@ -380,6 +380,52 @@ done
 RESULTS+=("実行権限: OK")
 
 # ============================================================
+# STEP 9: bashrc alias設定
+# ============================================================
+log_step "STEP 9: alias設定"
+
+# alias追加対象ファイル
+BASHRC_FILE="$HOME/.bashrc"
+
+# aliasが既に存在するかチェックし、なければ追加
+ALIAS_ADDED=false
+
+# css alias (出陣コマンド)
+if [ -f "$BASHRC_FILE" ]; then
+    if ! grep -q "alias css=" "$BASHRC_FILE" 2>/dev/null; then
+        echo "" >> "$BASHRC_FILE"
+        echo "# multi-agent-shogun aliases (added by first_setup.sh)" >> "$BASHRC_FILE"
+        echo "alias css='cd ~/multi-agent-shogun && ./shutsujin_departure.sh'" >> "$BASHRC_FILE"
+        log_info "alias css を追加しました（出陣コマンド）"
+        ALIAS_ADDED=true
+    else
+        log_info "alias css は既に存在します"
+    fi
+
+    # csm alias (ディレクトリ移動)
+    if ! grep -q "alias csm=" "$BASHRC_FILE" 2>/dev/null; then
+        if [ "$ALIAS_ADDED" = false ]; then
+            echo "" >> "$BASHRC_FILE"
+            echo "# multi-agent-shogun aliases (added by first_setup.sh)" >> "$BASHRC_FILE"
+        fi
+        echo "alias csm='cd ~/multi-agent-shogun'" >> "$BASHRC_FILE"
+        log_info "alias csm を追加しました（ディレクトリ移動）"
+        ALIAS_ADDED=true
+    else
+        log_info "alias csm は既に存在します"
+    fi
+else
+    log_warn "$BASHRC_FILE が見つかりません"
+fi
+
+if [ "$ALIAS_ADDED" = true ]; then
+    log_success "alias設定を追加しました"
+    log_info "反映するには 'source ~/.bashrc' を実行するか、ターミナルを再起動してください"
+fi
+
+RESULTS+=("alias設定: OK")
+
+# ============================================================
 # 結果サマリー
 # ============================================================
 echo ""

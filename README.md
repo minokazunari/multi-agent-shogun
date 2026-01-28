@@ -104,6 +104,15 @@ cd /mnt/c/tools/multi-agent-shogun
 ./shutsujin_departure.sh
 ```
 
+#### 🔐 First-Time Authentication (One Time Only)
+
+1. After running `./shutsujin_departure.sh`, a login screen appears in each pane
+2. **In just ONE pane**, copy the URL and open it in your browser to log in
+3. After authentication, press `Ctrl+C` in other panes and re-run `claude --dangerously-skip-permissions`
+4. Credentials are saved to `~/.claude/` and won't be needed again
+
+> **Note:** You don't need to log in separately on every pane.
+
 ---
 
 <details>
@@ -194,6 +203,7 @@ If you prefer to install dependencies manually:
 | Requirement | How to install | Notes |
 |-------------|----------------|-------|
 | WSL2 + Ubuntu | `wsl --install` in PowerShell | Windows only |
+| Set Ubuntu as default | `wsl --set-default Ubuntu` | Required for scripts to work |
 | tmux | `sudo apt install tmux` | Terminal multiplexer |
 | Node.js v20+ | `nvm install 20` | Required for Claude Code CLI |
 | Claude Code CLI | `npm install -g @anthropic-ai/claude-code` | Anthropic's official CLI |
