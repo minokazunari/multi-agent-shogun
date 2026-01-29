@@ -350,6 +350,11 @@ if [ ! -f "$SCRIPT_DIR/config/settings.yaml" ]; then
 # その他の言語コード（es, zh, ko, fr, de 等）も対応
 language: ja
 
+# シェル設定
+# bash: bash用プロンプト（デフォルト）
+# zsh: zsh用プロンプト
+shell: bash
+
 # スキル設定
 skill:
   # スキル保存先（スキル名に shogun- プレフィックスを付けて保存）
