@@ -167,9 +167,14 @@ cd ~/multi-agent-shogun && chmod +x *.sh
 
 ```bash
 cd /path/to/multi-agent-shogun
-./shutsujin_departure.sh
-tmux attach-session -t shogun   # Connect and give orders
+./shutsujin_departure.sh           # Normal startup (resumes existing tasks)
+./shutsujin_departure.sh -c        # Clean startup (resets task queues, preserves command history)
+tmux attach-session -t shogun      # Connect and give orders
 ```
+
+**Startup options:**
+- **Default**: Resumes with existing task queues and command history intact
+- **`-c` / `--clean`**: Resets task queues for a fresh start while preserving command history in `queue/shogun_to_karo.yaml`. Previously assigned tasks are backed up before reset.
 
 <details>
 <summary><b>Convenient aliases</b> (added by first_setup.sh)</summary>

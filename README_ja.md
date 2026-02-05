@@ -673,6 +673,10 @@ language: en   # 日本語 + 英訳併記
 ./shutsujin_departure.sh -s
 ./shutsujin_departure.sh --setup-only
 
+# タスクキューをクリア（指令履歴は保持）
+./shutsujin_departure.sh -c
+./shutsujin_departure.sh --clean
+
 # 決戦の陣: 全足軽をOpusで起動（最大能力・高コスト）
 ./shutsujin_departure.sh -k
 ./shutsujin_departure.sh --kessen
