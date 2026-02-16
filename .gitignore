@@ -52,6 +52,7 @@
 !lib/
 !lib/cli_adapter.sh
 !lib/ntfy_auth.sh
+!lib/agent_status.sh
 
 # Multi-CLI: Codex auto-load file
 !AGENTS.md
@@ -93,6 +94,7 @@
 !scripts/seo_qc.py
 !scripts/seo_qc.sh
 !scripts/stop_hook_inbox.sh
+!scripts/agent_status.sh
 
 
 # SayTask (sample template only, not actual data)
@@ -123,6 +125,8 @@
 !skills/
 !skills/skill-creator/
 !skills/skill-creator/SKILL.md
+!skills/agent-status/
+!skills/agent-status/SKILL.md
 
 # Tests
 !tests/
