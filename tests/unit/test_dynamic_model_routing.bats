@@ -97,6 +97,61 @@ capability_tiers:
     cost_group: claude_max
 YAML
 
+    # Phase 3 テスト用: gunshi_analysis.yaml フィクスチャ
+
+    # 正常な分析YAML（全フィールド定義）
+    cat > "${TEST_TMP}/analysis_valid.yaml" << 'YAML'
+task_id: subtask_test001
+timestamp: "2026-02-18T00:00:00+09:00"
+analysis:
+  bloom_level: 4
+  bloom_reasoning: "バグ修正タスク。コード読解+原因分析が必要"
+  recommended_model: "gpt-5.3"
+  recommended_cli: "codex"
+  confidence: 0.85
+  quality_criteria:
+    - "既存テストがパスすること"
+    - "変更箇所にユニットテスト追加"
+  qc_method: automated
+  pdca_needed: false
+YAML
+
+    # #48フィールド省略（#53領域のみ）
+    cat > "${TEST_TMP}/analysis_no48.yaml" << 'YAML'
+task_id: subtask_test002
+timestamp: "2026-02-18T00:00:00+09:00"
+analysis:
+  bloom_level: 3
+  bloom_reasoning: "テンプレ適用タスク"
+  recommended_model: "gpt-5.3-codex-spark"
+  recommended_cli: "codex"
+  confidence: 0.92
+YAML
+
+    # bloom_level範囲外
+    cat > "${TEST_TMP}/analysis_bad_bloom.yaml" << 'YAML'
+task_id: subtask_test003
+timestamp: "2026-02-18T00:00:00+09:00"
+analysis:
+  bloom_level: 7
+  bloom_reasoning: "invalid level"
+  recommended_model: "gpt-5.3"
+  recommended_cli: "codex"
+  confidence: 0.5
+YAML
+
+    # confidence範囲外
+    cat > "${TEST_TMP}/analysis_bad_confidence.yaml" << 'YAML'
+task_id: subtask_test004
+timestamp: "2026-02-18T00:00:00+09:00"
+analysis:
+  bloom_level: 4
+  bloom_reasoning: "normal task"
+  recommended_model: "gpt-5.3"
+  recommended_cli: "codex"
+  confidence: 2.0
+YAML
+
     # .venvへのsymlinkを作成
     if [ -d "${PROJECT_ROOT}/.venv" ]; then
         ln -sf "${PROJECT_ROOT}/.venv" "${TEST_TMP}/.venv"
@@ -476,4 +531,91 @@ load_adapter_with() {
     # current model can handle bloom level → no switch
     run needs_model_switch "gpt-5.3" 4
     [ "$output" = "no" ]
+}
+
+# =============================================================================
+# Phase 3: TC-DMR-200〜224 — Gunshi Bloom analysis layer
+# =============================================================================
+
+# --- TC-DMR-200〜203: FR-07 gunshi_analysis.yaml スキーマ ---
+
+@test "TC-DMR-200: FR-07 正常YAML — 全フィールド定義" {
+    load_adapter_with "${TEST_TMP}/settings_with_tiers.yaml"
+    run validate_gunshi_analysis "${TEST_TMP}/analysis_valid.yaml"
+    [ "$status" -eq 0 ]
+    [ "$output" = "valid" ]
+}
+
+@test "TC-DMR-201: FR-07 #48フィールド省略 — パースエラーなし" {
+    load_adapter_with "${TEST_TMP}/settings_with_tiers.yaml"
+    run validate_gunshi_analysis "${TEST_TMP}/analysis_no48.yaml"
+    [ "$status" -eq 0 ]
+    [ "$output" = "valid" ]
+}
+
+@test "TC-DMR-202: FR-07 bloom_level範囲外(0,7) — バリデーションエラー" {
+    load_adapter_with "${TEST_TMP}/settings_with_tiers.yaml"
+    run validate_gunshi_analysis "${TEST_TMP}/analysis_bad_bloom.yaml"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"bloom_level"* ]]
+}
+
+@test "TC-DMR-203: FR-07 confidence範囲外(-1, 2.0) — バリデーションエラー" {
+    load_adapter_with "${TEST_TMP}/settings_with_tiers.yaml"
+    run validate_gunshi_analysis "${TEST_TMP}/analysis_bad_confidence.yaml"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"confidence"* ]]
+}
+
+# --- TC-DMR-210〜214: FR-08 Bloom分析トリガー判定ロジック ---
+# L2統合テストのうち、判定ロジック部分をL1関数に切り出してテスト
+
+@test "TC-DMR-210: FR-08 auto → 全タスク分析トリガー" {
+    load_adapter_with "${TEST_TMP}/settings_bloom_auto.yaml"
+    result=$(should_trigger_bloom_analysis "auto" "false")
+    [ "$result" = "yes" ]
+}
+
+@test "TC-DMR-211: FR-08 manual + required=true → 分析トリガー" {
+    load_adapter_with "${TEST_TMP}/settings_bloom_manual.yaml"
+    result=$(should_trigger_bloom_analysis "manual" "true")
+    [ "$result" = "yes" ]
+}
+
+@test "TC-DMR-211b: FR-08 manual + required=false → トリガーなし" {
+    load_adapter_with "${TEST_TMP}/settings_bloom_manual.yaml"
+    result=$(should_trigger_bloom_analysis "manual" "false")
+    [ "$result" = "no" ]
+}
+
+@test "TC-DMR-212: FR-08 off → 分析なし" {
+    load_adapter_with "${TEST_TMP}/settings_bloom_off.yaml"
+    result=$(should_trigger_bloom_analysis "off" "true")
+    [ "$result" = "no" ]
+}
+
+@test "TC-DMR-213: FR-08 bloom_routing未定義 → off扱い → 分析なし" {
+    load_adapter_with "${TEST_TMP}/settings_no_tiers.yaml"
+    # bloom_routing not set → get_bloom_routing returns "off"
+    routing=$(get_bloom_routing)
+    result=$(should_trigger_bloom_analysis "$routing" "true")
+    [ "$result" = "no" ]
+}
+
+@test "TC-DMR-214: FR-08 should_trigger_bloom_analysis fallback引数" {
+    load_adapter_with "${TEST_TMP}/settings_bloom_auto.yaml"
+    # gunshi_available=no → fallback to Phase 2
+    result=$(should_trigger_bloom_analysis "auto" "false" "no")
+    [ "$result" = "fallback" ]
+}
+
+# --- TC-DMR-224: FR-09 不正値 → off + stderr警告 ---
+
+@test "TC-DMR-224: FR-09 bloom_routing不正値 → off + stderr警告" {
+    load_adapter_with "${TEST_TMP}/settings_bloom_invalid.yaml"
+    result=$(get_bloom_routing 2>/tmp/dmr_stderr_test)
+    [ "$result" = "off" ]
+    # stderrに警告が出力されている
+    grep -q "bloom_routing" /tmp/dmr_stderr_test || grep -q "invalid" /tmp/dmr_stderr_test
+    rm -f /tmp/dmr_stderr_test
 }

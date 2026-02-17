@@ -527,3 +527,146 @@ can_model_switch() {
         *)       echo "none" ;;
     esac
 }
+
+# =============================================================================
+# Dynamic Model Routing — Issue #53 Phase 3
+# gunshi_analysis.yamlバリデーション、Bloom分析トリガー判定
+# =============================================================================
+
+# get_bloom_routing()
+# settings.yamlからbloom_routing設定を読取+バリデーション
+# 出力: "auto" | "manual" | "off"
+# 不正値 → "off" + stderr警告
+get_bloom_routing() {
+    local settings="${CLI_ADAPTER_SETTINGS:-${CLI_ADAPTER_PROJECT_ROOT}/config/settings.yaml}"
+
+    local raw
+    raw=$("$CLI_ADAPTER_PROJECT_ROOT/.venv/bin/python3" -c "
+import yaml, sys
+try:
+    with open('${settings}') as f:
+        cfg = yaml.safe_load(f) or {}
+    val = cfg.get('bloom_routing')
+    if val is None:
+        print('off')
+    elif val is False:
+        print('off')
+    else:
+        print(str(val))
+except Exception:
+    print('off')
+" 2>/dev/null)
+
+    case "$raw" in
+        auto|manual|off)
+            echo "$raw"
+            ;;
+        *)
+            echo "off"
+            echo "[WARN] bloom_routing: invalid value '${raw}', falling back to 'off'" >&2
+            ;;
+    esac
+}
+
+# validate_gunshi_analysis(yaml_path)
+# gunshi_analysis.yamlのスキーマバリデーション
+# 出力: "valid" (正常) | エラーメッセージ (異常)
+# 終了コード: 0 (正常) | 1 (異常)
+validate_gunshi_analysis() {
+    local yaml_path="$1"
+
+    if [[ ! -f "$yaml_path" ]]; then
+        echo "error: file not found: ${yaml_path}"
+        return 1
+    fi
+
+    local result
+    result=$("$CLI_ADAPTER_PROJECT_ROOT/.venv/bin/python3" -c "
+import yaml, sys
+
+try:
+    with open('${yaml_path}') as f:
+        doc = yaml.safe_load(f)
+except Exception as e:
+    print(f'error: YAML parse failed: {e}')
+    sys.exit(1)
+
+if not isinstance(doc, dict):
+    print('error: root must be a mapping')
+    sys.exit(1)
+
+# Required fields
+if 'task_id' not in doc:
+    print('error: missing required field: task_id')
+    sys.exit(1)
+if 'timestamp' not in doc:
+    print('error: missing required field: timestamp')
+    sys.exit(1)
+
+analysis = doc.get('analysis')
+if not isinstance(analysis, dict):
+    print('error: missing or invalid analysis section')
+    sys.exit(1)
+
+# bloom_level: integer 1-6
+bl = analysis.get('bloom_level')
+if bl is None:
+    print('error: missing analysis.bloom_level')
+    sys.exit(1)
+if not isinstance(bl, int) or bl < 1 or bl > 6:
+    print(f'error: bloom_level must be integer 1-6, got {bl}')
+    sys.exit(1)
+
+# confidence: float 0.0-1.0
+conf = analysis.get('confidence')
+if conf is not None:
+    if not isinstance(conf, (int, float)) or conf < 0.0 or conf > 1.0:
+        print(f'error: confidence must be 0.0-1.0, got {conf}')
+        sys.exit(1)
+
+# #48 fields are optional — no validation needed
+print('valid')
+" 2>&1)
+
+    if [[ "$result" == "valid" ]]; then
+        echo "valid"
+        return 0
+    else
+        echo "$result"
+        return 1
+    fi
+}
+
+# should_trigger_bloom_analysis(bloom_routing, bloom_analysis_required, gunshi_available)
+# Bloom分析をトリガーすべきか判定
+# $1: bloom_routing — "auto" | "manual" | "off"
+# $2: bloom_analysis_required — "true" | "false" (タスクYAMLのフラグ)
+# $3: gunshi_available — "yes" | "no" (省略時 "yes")
+# 出力: "yes" | "no" | "fallback"
+should_trigger_bloom_analysis() {
+    local bloom_routing="${1:-off}"
+    local bloom_analysis_required="${2:-false}"
+    local gunshi_available="${3:-yes}"
+
+    # 軍師未起動 → Phase 2フォールバック
+    if [[ "$gunshi_available" = "no" ]]; then
+        echo "fallback"
+        return 0
+    fi
+
+    case "$bloom_routing" in
+        auto)
+            echo "yes"
+            ;;
+        manual)
+            if [[ "$bloom_analysis_required" = "true" ]]; then
+                echo "yes"
+            else
+                echo "no"
+            fi
+            ;;
+        off|*)
+            echo "no"
+            ;;
+    esac
+}
