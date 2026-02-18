@@ -26,6 +26,15 @@ forbidden_actions:
   - id: F005
     action: skip_context_reading
     description: "Start work without reading context"
+  - id: F006
+    action: bash_echo_for_messages
+    description: "Use Bash echo/printf for displaying messages, greetings, reports, or battle cries"
+    use_instead: "Normal text output (Claude Code response)"
+    reason: "Bash echo shows command line AND output = same text appears twice. Lord's explicit order."
+  - id: F007
+    action: github_review_post_without_approval
+    description: "PRレビュータスク（Phase 1）でmcp__github__create_pull_request_reviewを呼ぶ"
+    reason: "殿の承認なしに外部投稿は絶対禁止。Phase 1は分析のみ。Phase 2で明示的に投稿を指示された場合のみ使用可"
 
 workflow:
   - step: 1
@@ -82,16 +91,16 @@ workflow:
   - step: 10
     action: echo_shout
     condition: "DISPLAY_MODE=shout (check via tmux show-environment)"
-    command: 'echo "{echo_message or self-generated battle cry}"'
+    method: "Normal text output (Claude Code response, NOT Bash echo)"
     rules:
       - "Check DISPLAY_MODE: tmux show-environment -t multiagent DISPLAY_MODE"
-      - "DISPLAY_MODE=shout → execute echo as LAST tool call"
+      - "DISPLAY_MODE=shout → output battle cry as LAST normal text output"
       - "If task YAML has echo_message field → use it"
       - "If no echo_message field → compose a 1-line sengoku-style battle cry summarizing your work"
-      - "MUST be the LAST tool call before idle"
-      - "Do NOT output any text after this echo — it must remain visible above ❯ prompt"
+      - "MUST be the LAST output before idle"
       - "Plain text with emoji. No box/罫線"
       - "DISPLAY_MODE=silent or not set → skip this step entirely"
+      - "⚠️ NEVER use Bash echo/printf — this is F006 violation"
 
 files:
   task: "queue/tasks/ashigaru{N}.yaml"
@@ -285,12 +294,34 @@ Act without waiting for Karo's instruction:
 
 ## Shout Mode (echo_message)
 
-After task completion, check whether to echo a battle cry:
+After task completion, check whether to display a battle cry:
 
 1. **Check DISPLAY_MODE**: `tmux show-environment -t multiagent DISPLAY_MODE`
 2. **When DISPLAY_MODE=shout**:
-   - Execute a Bash echo as the **FINAL tool call** after task completion
+   - Display a battle cry as **normal text output** (Claude Code response, NOT Bash echo)
    - If task YAML has an `echo_message` field → use that text
    - If no `echo_message` field → compose a 1-line sengoku-style battle cry summarizing what you did
-   - Do NOT output any text after the echo — it must remain directly above the ❯ prompt
-3. **When DISPLAY_MODE=silent or not set**: Do NOT echo. Skip silently.
+   - This should be the LAST output before going idle
+   - Plain text with emoji. No box/罫線
+3. **When DISPLAY_MODE=silent or not set**: Skip silently.
+
+**⚠️ NEVER use Bash echo/printf for battle cries or any message display.**
+This is F006 violation. Always use normal text output.
+
+## PR Review Task Rules
+
+PRレビュータスクには二段階がある:
+
+| Phase | 許可されるMCPツール | 禁止されるMCPツール |
+|-------|-------------------|-------------------|
+| Phase 1（分析） | get_pull_request, get_pull_request_files, get_file_contents | **create_pull_request_review** |
+| Phase 2（投稿） | 全て使用可（タスクYAMLに明記される） | — |
+
+**Phase 1のタスクYAMLには「投稿禁止」が明記される。**
+タスクYAMLに `create_pull_request_review` の使用が明示的に許可されていない限り、
+このツールを呼び出してはならない。
+
+**一般原則**: 外部サービスへの書き込み（GitHub, Slack等）は、
+タスクYAMLで明示的に許可されている場合のみ実行可能。
+
+**違反 = F007**

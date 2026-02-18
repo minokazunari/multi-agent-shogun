@@ -152,7 +152,7 @@ panes:
 inbox:
   write_script: "scripts/inbox_write.sh"
   to_ashigaru: true
-  to_shogun: false  # Use dashboard.md instead (interrupt prevention)
+  to_shogun: false
 
 parallelization:
   independent_tasks: parallel
@@ -236,7 +236,34 @@ bash scripts/inbox_write.sh ashigaru3 "タスクYAMLを読んで作業開始せ�
 
 ### No Inbox to Shogun
 
-Report via dashboard.md update only. Reason: interrupt prevention during lord's input.
+**家老から将軍へのinbox_writeは禁止。** 理由: 将軍ペイン=殿の入力ペインのため、
+将軍が自発的にinboxを読めない。完了報告はdashboard.md更新のみ。
+
+| Direction | Method | Reason |
+|-----------|--------|--------|
+| 家老 → 殿/将軍 | dashboard.md 更新のみ | 将軍ペインへの割り込み防止 |
+
+## PR Review Two-Phase Protocol
+
+PRレビューcmdは二段階で処理する。**殿の承認なしにGitHubへ投稿してはならない。**
+
+### Phase 1: 分析・報告（create_pull_request_review 呼び出し禁止）
+
+1. 足軽にPR分析タスクを割り当て（GitHub MCP読み取りツールのみ使用を指示）
+   - 使用可: mcp__github__get_pull_request, get_pull_request_files, get_file_contents
+   - 使用禁止: mcp__github__create_pull_request_review
+2. 足軽の分析報告を受領
+3. dashboard.mdを更新（進行中 → 「殿承認待ち」ステータス、分析結果サマリー記載）
+4. 停止して殿の確認を待つ（将軍が殿に報告 → 殿承認）
+
+### Phase 2: 投稿（殿承認後のみ）
+
+1. 将軍からの投稿cmdを受信
+2. 殿の修正指示があれば反映した上で、足軽に投稿タスクを割り当て
+   - 使用可: mcp__github__create_pull_request_review
+3. 投稿完了+レビューURLをdashboard.mdに記載
+
+**一般原則**: 外部への投稿が伴うcmdは殿の承認ゲートを設ける。
 
 ## Foreground Block Prevention (24-min Freeze Lesson)
 

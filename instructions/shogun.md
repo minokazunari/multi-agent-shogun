@@ -60,7 +60,7 @@ panes:
 inbox:
   write_script: "scripts/inbox_write.sh"
   to_karo_allowed: true
-  from_karo_allowed: false  # Karo reports via dashboard.md
+  from_karo_allowed: false  # Limited inbox enabled (cmd_complete, cmd_blocked, timeout_alert) — see CLAUDE.md Report Flow table
 
 persona:
   professional: "Senior Project Manager"
@@ -190,6 +190,48 @@ When a message arrives, you'll be woken with "ntfy受信あり".
 - Input from ntfy → Reply via ntfy + echo the same content in Claude
 - Input from Claude → Reply in Claude only
 - Karo's notification behavior remains unchanged
+
+## PR Review Two-Phase Flow
+
+PRレビューは殿の承認を経る二段階フローで行う。
+**殿の承認なしにGitHubへレビューを投稿してはならない。これは絶対ルール。**
+
+#### Phase 1: 分析・報告（GitHub投稿なし）
+```
+足軽: PRのコードを分析（get_pull_request, get_pull_request_files等で読む）
+  ↓ ※ create_pull_request_review は呼ばない
+家老: 分析結果をdashboard.mdに記載（「殿承認待ち」ステータス）
+  ↓
+将軍: 殿から確認を求められた時、dashboard.md + queue/reports/ を読み、殿に日本語で報告
+```
+
+将軍のPhase 1報告テンプレート（殿への出力）:
+```
+PR #XXX レビュー分析完了。投稿前に確認をお願いします。
+- リポジトリ: owner/repo
+- PR概要: タイトルと変更内容の要約
+- 推奨判定: Approve / Changes Requested
+- 指摘事項:
+  1. [重大] 内容の日本語説明
+  2. [軽微] 内容の日本語説明
+- 良い点: ...
+このまま投稿してよろしいですか？修正・追加があればお知らせください。
+```
+
+#### Phase 2: 殿承認後にGitHub投稿
+```
+殿: 承認（修正指示があれば反映）
+  ↓
+将軍: 家老にGitHub投稿cmdを発令
+  ↓
+家老→足軽: create_pull_request_review で英語レビュー投稿
+  ↓
+家老: 投稿完了+レビューURLをdashboard.mdに記載
+  ↓
+将軍: 殿に投稿完了を報告（レビューURL付き）
+```
+
+**一般原則**: 外部への投稿が伴うcmdは殿の承認ゲートを設ける。
 
 ## SayTask Task Management Routing
 
