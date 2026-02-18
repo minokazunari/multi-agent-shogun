@@ -1052,7 +1052,8 @@ except Exception:
 }
 
 # get_ashigaru_ids()
-# settings.yaml の cli.agents から足軽ID一覧を返す（スペース区切り、番号順）
+# settings.yaml の worker_count から足軽ID一覧を生成（スペース区切り、番号順）
+# cli.agents に定義がなくても worker_count 分のIDを返す
 # フォールバック: "ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7"
 get_ashigaru_ids() {
     local settings="${CLI_ADAPTER_SETTINGS:-${CLI_ADAPTER_PROJECT_ROOT}/config/settings.yaml}"
@@ -1062,12 +1063,12 @@ import yaml
 try:
     with open('${settings}') as f:
         cfg = yaml.safe_load(f) or {}
-    agents = cfg.get('cli', {}).get('agents', {})
-    results = [k for k in agents if k.startswith('ashigaru')]
-    results.sort(key=lambda x: int(x.replace('ashigaru', '')) if x.replace('ashigaru', '').isdigit() else 99)
-    print(' '.join(results))
+    count = cfg.get('worker_count', 7)
+    if not isinstance(count, int) or count < 1:
+        count = 7
+    print(' '.join(f'ashigaru{i}' for i in range(1, count + 1)))
 except Exception:
-    pass
+    print('ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7')
 " 2>/dev/null)
     if [[ -n "$result" ]]; then
         echo "$result"
