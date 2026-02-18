@@ -30,13 +30,32 @@ fi
 MSG_ID="msg_$(date +%Y%m%d_%H%M%S)_$(head -c 4 /dev/urandom | xxd -p)"
 TIMESTAMP=$(date "+%Y-%m-%dT%H:%M:%S")
 
-# Atomic write with flock (3 retries)
+# Atomic write with mkdir lock (macOS compatible, 3 retries)
+# mkdir is atomic on all POSIX systems — replaces Linux-only flock
+LOCKDIR="${INBOX}.lockdir"
 attempt=0
 max_attempts=3
 
+acquire_lock() {
+    local max_wait=5
+    local waited=0
+    while ! mkdir "$LOCKDIR" 2>/dev/null; do
+        if [ $waited -ge $max_wait ]; then
+            return 1
+        fi
+        sleep 0.5
+        waited=$((waited + 1))
+    done
+    return 0
+}
+
+release_lock() {
+    rmdir "$LOCKDIR" 2>/dev/null || true
+}
+
 while [ $attempt -lt $max_attempts ]; do
-    if (
-        flock -w 5 200 || exit 1
+    if acquire_lock; then
+        trap 'release_lock' EXIT
 
         # Add message via python3 (unified YAML handling)
         "$SCRIPT_DIR/.venv/bin/python3" -c "
@@ -86,13 +105,10 @@ try:
 except Exception as e:
     print(f'ERROR: {e}', file=sys.stderr)
     sys.exit(1)
-" || exit 1
+" && { release_lock; exit 0; } || { release_lock; exit 1; }
 
-    ) 200>"$LOCKFILE"; then
-        # Success
-        exit 0
     else
-        # Lock timeout or error
+        # Lock timeout
         attempt=$((attempt + 1))
         if [ $attempt -lt $max_attempts ]; then
             echo "[inbox_write] Lock timeout for $INBOX (attempt $attempt/$max_attempts), retrying..." >&2
