@@ -348,7 +348,8 @@ wsl --install
 |-----------|------|---------------|
 | `install.bat` | Windows: WSL2 + Ubuntu のセットアップ | 初回のみ |
 | `first_setup.sh` | tmux、Node.js、Claude Code CLI のインストール + Memory MCP設定 | 初回のみ |
-| `shutsujin_departure.sh` | tmuxセッション作成 + Claude Code起動 + 指示書読み込み + ntfyリスナー起動 | 毎日 |
+| `shutsujin_departure.sh` | tmuxセッション作成 + CLI起動 + 指示書読み込み + ntfyリスナー起動 | 毎日 |
+| `scripts/switch_cli.sh` | エージェントのCLI/モデルをライブ切替（settings.yaml → /exit → 再起動） | 必要時 |
 
 ### `install.bat` が自動で行うこと：
 - ✅ WSL2がインストールされているかチェック（未インストールなら案内）
@@ -768,19 +769,20 @@ bash scripts/ntfy_listener.sh
 各tmuxペインのボーダーにエージェントの現在のタスクを表示：
 
 ```
-┌ ashigaru1 (Sonnet) VF requirements ─┬ ashigaru3 (Opus) API research ──────┐
+┌ ashigaru1 Sonnet+T VF requirements ──┬ ashigaru3 Opus+T API research ──────┐
 │                                      │                                     │
-│  Working on SayTask requirements     │  Researching REST API patterns      │
+│  SayTask要件定義中                   │  REST APIパターン調査中             │
 │                                      │                                     │
-├ ashigaru2 (Sonnet) ─────────────────┼ ashigaru4 (Opus) DB schema design ──┤
+├ ashigaru2 Sonnet ───────────────────┼ ashigaru4 Spark DBスキーマ設計 ─────┤
 │                                      │                                     │
-│  (idle — waiting for assignment)     │  Designing database schema          │
+│  （待機中 — 割当待ち）               │  データベーススキーマ設計中         │
 │                                      │                                     │
 └──────────────────────────────────────┴─────────────────────────────────────┘
 ```
 
-- **作業中**: `ashigaru1 (Sonnet) VF requirements` — エージェント名、モデル、タスク概要
-- **待機中**: `ashigaru1 (Sonnet)` — モデル名のみ、タスクなし
+- **作業中**: `ashigaru1 Sonnet+T VF requirements` — エージェント名、モデル（Thinkingインジケータ付き）、タスク概要
+- **待機中**: `ashigaru2 Sonnet` — モデル名のみ、タスクなし
+- **表示名**: Sonnet, Opus, Haiku, Codex, Spark — `+T` サフィックス = Extended Thinking有効
 - 家老がタスク割当・完了時に自動更新
 - 9ペインを一目見れば、誰が何をしているか即座にわかる
 
@@ -789,7 +791,7 @@ bash scripts/ntfy_listener.sh
 足軽がタスクを完了すると、パーソナライズされた戦国風の叫びをtmuxペインに表示します — 部下が働いている実感を得られる。
 
 ```
-┌ ashigaru1 (Sonnet) ──────────┬ ashigaru2 (Sonnet) ──────────┐
+┌ ashigaru1 Sonnet+T ─────────┬ ashigaru2 Sonnet+T ─────────┐
 │                               │                               │
 │  ⚔️ 足軽1号、任を果たし待機！ │  🔥 足軽2号、二番槍の意地！   │
 │  八刃一志の志、胸に刻む！     │  八刃一志！共に城を落とせ！   │
@@ -918,8 +920,12 @@ SayTaskは個人の生産性を担当（キャプチャ → スケジュール �
 |-------------|--------|----------|------|
 | 将軍 | Opus | **有効（high）** | 殿の参謀。`--shogun-no-thinking` で中継専用モードに |
 | 家老 | Sonnet | 有効 | タスク分配・簡易QC・ダッシュボード管理 |
-| 軍師 | Sonnet 4.6 | 有効 | 深い分析・設計レビュー・アーキテクチャ評価 |
+| 軍師 | Opus | 有効 | 深い分析・設計レビュー・アーキテクチャ評価 |
 | 足軽1-7 | Sonnet 4.6 | 有効 | 実装：コード・リサーチ・ファイル操作 |
+
+**Thinking制御**: `config/settings.yaml` でエージェントごとに `thinking: true/false` を設定可能。`thinking: false` の場合、`MAX_THINKING_TOKENS=0` で起動しExtended Thinkingを無効化。ペインボーダーにはThinking有効時に `+T` サフィックスが表示される（例: `Sonnet+T`、`Opus+T`）。
+
+**ライブモデル切替**: `/shogun-model-switch` スキルで、システム全体を再起動せずに任意エージェントのCLI種別・モデル・Thinking設定を変更可能。詳細はスキルセクション参照。
 
 **認知的複雑さ**でのルーティングは2段階：**エージェントルーティング**（足軽はL1-L3、軍師はL4-L6）と **足軽内のモデルルーティング**（`capability_tiers` でBloomレベルに応じて最適モデルを選択。下記「動的モデルルーティング」参照）。
 
@@ -1057,14 +1063,18 @@ tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'
 
 ### 同梱スキル（リポジトリにコミット済み）
 
-`skills/` ディレクトリに2つのスキルが同梱されています。どのユーザにも有用なセットアップユーティリティです：
+`skills/` ディレクトリにスキルが同梱されています。どのユーザにも有用なユーティリティです：
 
 | スキル | 説明 |
 |--------|------|
+| `/skill-creator` | スキル作成のテンプレート・ガイド |
+| `/shogun-agent-status` | 全エージェントの稼働/待機状態をタスク・inbox情報付きで表示 |
 | `/shogun-model-list` | 全CLIツール × モデル × サブスクリプション × Bloom上限の参照テーブル |
 | `/shogun-bloom-config` | 対話式設定: 2つの質問に答えるだけで `capability_tiers` YAMLを生成 |
+| `/shogun-model-switch` | ライブCLI/モデル切替: settings.yaml更新 → `/exit` → 正しいフラグで再起動。Thinking ON/OFF制御も対応 |
+| `/shogun-readme-sync` | README.md と README_ja.md の同期 |
 
-これらは意図的にシンプルに設計されています — システムの設定を助けるものであり、業務を代行するものではありません。
+システムの設定・運用を支援するスキルです。個人のワークフロースキルはボトムアップ発見プロセスで有機的に成長します。
 
 ### スキルの思想
 
@@ -1381,6 +1391,7 @@ multi-agent-shogun/
 │   ├── agent_status.sh       # 全エージェントの稼働/待機状態を表示
 │   ├── inbox_write.sh        # エージェントinboxへのメッセージ書き込み
 │   ├── inbox_watcher.sh      # inotifywaitでinbox変更を監視
+│   ├── switch_cli.sh         # ライブCLI/モデル切替（/exit → 再起動）
 │   ├── ntfy.sh               # スマホにプッシュ通知を送信
 │   └── ntfy_listener.sh      # スマホからのメッセージをストリーミング受信
 │
@@ -1412,6 +1423,14 @@ multi-agent-shogun/
 │   ├── integ_code.md         # 統合: コードレビュー
 │   ├── integ_analysis.md     # 統合: 分析
 │   └── context_template.md   # 汎用7セクション プロジェクトコンテキスト
+│
+├── skills/                   # 再利用可能スキル（リポジトリにコミット済み）
+│   ├── skill-creator/        # スキル作成テンプレート
+│   ├── shogun-agent-status/  # エージェント稼働状態表示
+│   ├── shogun-model-list/    # モデル能力参照テーブル
+│   ├── shogun-bloom-config/  # Bloom階層設定ツール
+│   ├── shogun-model-switch/  # ライブCLI/モデル切替
+│   └── shogun-readme-sync/   # README同期
 │
 ├── memory/                   # Memory MCP保存場所
 ├── dashboard.md              # リアルタイム状況一覧
