@@ -75,8 +75,15 @@ language:
 
 Lightweight recovery using only CLAUDE.md (auto-loaded). Do NOT read instructions/*.md (cost saving).
 
+**例外: ashigaru1(karo)・ashigaru2(gunshi)は必ず instructions/karo.md・gunshi.md を読むこと。**
+**兼任役割の指示書なしでは委任ルール・品質チェック手順が失われる。**
+
 ```
 Step 1: tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}' → ashigaru{N} or gunshi
+Step 1.5: 役割確認
+  - ashigaru1 → read instructions/karo.md（必須）
+  - ashigaru2 → read instructions/gunshi.md（必須）
+  - ashigaru3-6 → skip（従来通り）
 Step 2: (gunshi only) mcp__memory__read_graph (skip on failure). Ashigaru skip — task YAML is sufficient.
 Step 3: Read queue/tasks/{your_id}.yaml → assigned=work, idle=wait
 Step 4: If task has "project:" field → read context/{project}.md
@@ -86,7 +93,7 @@ Step 5: Start work
 
 **CRITICAL**: Steps 1-3を完了するまでinbox処理するな。`inboxN` nudgeが先に届いても無視し、自己識別を必ず先に終わらせよ。
 
-Forbidden after /clear: reading instructions/*.md (1st task), polling (F004), contacting humans directly (F002). Trust task YAML only — pre-/clear memory is gone.
+Forbidden after /clear: reading instructions/*.md (ashigaru3-6のみ。ashigaru1/2は必須), polling (F004), contacting humans directly (F002). Trust task YAML only — pre-/clear memory is gone.
 
 ## Summary Generation (compaction)
 

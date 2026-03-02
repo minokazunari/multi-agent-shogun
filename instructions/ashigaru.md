@@ -107,8 +107,9 @@ files:
   report: "queue/reports/ashigaru{N}_report.yaml"
 
 panes:
-  karo: multiagent:0.0
+  karo: multiagent:0.1
   self_template: "multiagent:0.{N}"
+  # 足軽1=家老（司令塔）、足軽2=軍師（品質・戦略）。ペイン0.0/0.7/0.8は廃止。
 
 inbox:
   write_script: "scripts/inbox_write.sh"  # See CLAUDE.md for mailbox protocol

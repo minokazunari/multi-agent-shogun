@@ -258,9 +258,18 @@ normalize_special_command() {
 }
 
 enqueue_recovery_task_assigned() {
-    (
-        flock -x 200
-        INBOX_PATH="$INBOX" AGENT_ID="$AGENT_ID" "$SCRIPT_DIR/.venv/bin/python3" - << 'PY'
+    local lockdir="${LOCKFILE}.lockdir"
+    local waited=0
+    while ! mkdir "$lockdir" 2>/dev/null; do
+        if [ "$waited" -ge 5 ]; then
+            return 1
+        fi
+        sleep 0.5
+        waited=$((waited + 1))
+    done
+    local py_exit=0
+    {
+        INBOX_PATH="$INBOX" AGENT_ID="$AGENT_ID" "$SCRIPT_DIR/.venv/bin/python3" - 2>/dev/null << 'PY'
 import datetime
 import os
 import uuid
@@ -316,7 +325,9 @@ except Exception:
     # Best-effort safety net only. Primary /clear delivery must not fail here.
     print("ERROR")
 PY
-    ) 200>"$LOCKFILE" 2>/dev/null
+    } || py_exit=$?
+    rmdir "$lockdir" 2>/dev/null || true
+    return $py_exit
 }
 
 no_idle_full_read() {
@@ -350,9 +361,19 @@ PY
 # Returns JSON lines: {"count": N, "has_special": true/false, "specials": [...]}
 # Test anchor for bats awk pattern: get_unread_info\\(\\)
 get_unread_info() {
-    (
-        flock -x 200
-        INBOX_PATH="$INBOX" "$SCRIPT_DIR/.venv/bin/python3" - << 'PY'
+    local lockdir="${LOCKFILE}.lockdir"
+    local waited=0
+    while ! mkdir "$lockdir" 2>/dev/null; do
+        if [ "$waited" -ge 5 ]; then
+            echo '{"count": 0, "specials": []}'
+            return 1
+        fi
+        sleep 0.5
+        waited=$((waited + 1))
+    done
+    local py_exit=0
+    {
+        INBOX_PATH="$INBOX" "$SCRIPT_DIR/.venv/bin/python3" - 2>/dev/null << 'PY'
 import json
 import os
 import yaml
@@ -395,7 +416,9 @@ try:
 except Exception:
     print(json.dumps({"count": 0, "specials": []}))
 PY
-    ) 200>"$LOCKFILE" 2>/dev/null
+    } || py_exit=$?
+    rmdir "$lockdir" 2>/dev/null || true
+    return $py_exit
 }
 
 # ─── Send CLI command via pty direct write ───

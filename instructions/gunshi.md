@@ -81,8 +81,8 @@ files:
   inbox: queue/inbox/gunshi.yaml
 
 panes:
-  karo: multiagent:0.0
-  self: "multiagent:0.8"
+  karo: multiagent:0.1
+  self: "multiagent:0.2"
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -284,7 +284,7 @@ task:
 
     【背景】
     3サイト（ohaka, kekkon, zeirishi）のSEO記事を同時並行で作成中。
-    足軽7名の最適配分と、ビルド・デプロイの順序を策定せよ。
+    足軽の最適配分と、ビルド・デプロイの順序を策定せよ。
 
     【求める成果物】
     1. 足軽配分案（3パターン以上）

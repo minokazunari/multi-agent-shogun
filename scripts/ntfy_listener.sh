@@ -50,14 +50,21 @@ append_ntfy_inbox() {
     local ts="$2"
     local msg="$3"
 
-    (
-        flock -w 5 200 || exit 1
-        NTFY_INBOX_PATH="$INBOX" \
-        NTFY_CORRUPT_DIR="$CORRUPT_DIR" \
-        MSG_ID="$msg_id" \
-        MSG_TS="$ts" \
-        MSG_TEXT="$msg" \
-        "$SCRIPT_DIR/.venv/bin/python3" - << 'PY'
+    local lockdir="${LOCKFILE}.lockdir"
+    local waited=0
+    while ! mkdir "$lockdir" 2>/dev/null; do
+        if [ "$waited" -ge 5 ]; then
+            return 1
+        fi
+        sleep 0.5
+        waited=$((waited + 1))
+    done
+    NTFY_INBOX_PATH="$INBOX" \
+    NTFY_CORRUPT_DIR="$CORRUPT_DIR" \
+    MSG_ID="$msg_id" \
+    MSG_TS="$ts" \
+    MSG_TEXT="$msg" \
+    "$SCRIPT_DIR/.venv/bin/python3" - << 'PY'
 import datetime
 import os
 import shutil
@@ -128,7 +135,9 @@ except Exception as e:
     print(f"[ntfy_listener] failed to write inbox: {e}", file=sys.stderr)
     sys.exit(1)
 PY
-    ) 200>"$LOCKFILE"
+    local py_exit=$?
+    rmdir "$lockdir" 2>/dev/null || true
+    return $py_exit
 }
 
 echo "[$(date)] ntfy listener started — topic: $TOPIC (auth: ${NTFY_TOKEN:+token}${NTFY_USER:+basic}${NTFY_TOKEN:-${NTFY_USER:-none}})" >&2

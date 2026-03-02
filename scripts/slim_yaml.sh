@@ -12,18 +12,24 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOCK_FILE="${SCRIPT_DIR}/../queue/.slim_yaml.lock"
+LOCKDIR="${LOCK_FILE}.lockdir"
 LOCK_TIMEOUT=10
 
-# Acquire exclusive lock
-exec 200>"$LOCK_FILE"
-if ! flock -w "$LOCK_TIMEOUT" 200; then
-    echo "Error: Failed to acquire lock within $LOCK_TIMEOUT seconds" >&2
-    exit 1
-fi
+# Acquire exclusive lock using mkdir (macOS compatible, replaces Linux-only flock)
+waited=0
+while ! mkdir "$LOCKDIR" 2>/dev/null; do
+    if [ "$waited" -ge "$LOCK_TIMEOUT" ]; then
+        echo "Error: Failed to acquire lock within $LOCK_TIMEOUT seconds" >&2
+        exit 1
+    fi
+    sleep 1
+    waited=$((waited + 1))
+done
+trap "rmdir '$LOCKDIR' 2>/dev/null" EXIT
 
 # Call the Python implementation
 python3 "$(dirname "$0")/slim_yaml.py" "$@"
 exit_code=$?
 
-# Lock is automatically released when file descriptor is closed
+# Lock is released by EXIT trap
 exit "$exit_code"

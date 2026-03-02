@@ -263,8 +263,13 @@ get_agent_model() {
                 *)              echo "k2.5" ;;
             esac
             ;;
+        codex)
+            # Codex CLI: --model不指定で~/.codex/config.tomlのデフォルト(gpt-5.3-codex等)を使用
+            # 'sonnet'等AnthropicモデルをCodexに渡すとエラーになるため空文字を返す
+            echo ""
+            ;;
         *)
-            # Claude Code/Codex/Copilot用デフォルトモデル
+            # Claude Code/Copilot用デフォルトモデル
             case "$agent_id" in
                 shogun)         echo "opus" ;;
                 karo)           echo "sonnet" ;;
@@ -1054,7 +1059,7 @@ except Exception:
 # get_ashigaru_ids()
 # settings.yaml の worker_count から足軽ID一覧を生成（スペース区切り、番号順）
 # cli.agents に定義がなくても worker_count 分のIDを返す
-# フォールバック: "ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7"
+# フォールバック: "ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6"
 get_ashigaru_ids() {
     local settings="${CLI_ADAPTER_SETTINGS:-${CLI_ADAPTER_PROJECT_ROOT}/config/settings.yaml}"
     local result
@@ -1063,16 +1068,16 @@ import yaml
 try:
     with open('${settings}') as f:
         cfg = yaml.safe_load(f) or {}
-    count = cfg.get('worker_count', 7)
+    count = cfg.get('worker_count', 6)
     if not isinstance(count, int) or count < 1:
-        count = 7
+        count = 6
     print(' '.join(f'ashigaru{i}' for i in range(1, count + 1)))
 except Exception:
-    print('ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7')
+    print('ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6')
 " 2>/dev/null)
     if [[ -n "$result" ]]; then
         echo "$result"
     else
-        echo "ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6 ashigaru7"
+        echo "ashigaru1 ashigaru2 ashigaru3 ashigaru4 ashigaru5 ashigaru6"
     fi
 }

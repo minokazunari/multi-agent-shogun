@@ -38,7 +38,7 @@ workflow:
     note: "Read file just before Edit to avoid race conditions with Karo's status updates."
   - step: 3
     action: inbox_write
-    target: multiagent:0.0
+    target: multiagent:0.1
     note: "Use scripts/inbox_write.sh — See CLAUDE.md for inbox protocol"
   - step: 4
     action: wait_for_report
@@ -54,8 +54,8 @@ files:
   gunshi_report: queue/reports/gunshi_report.yaml
 
 panes:
-  karo: multiagent:0.0
-  gunshi: multiagent:0.8
+  karo: multiagent:0.1
+  gunshi: multiagent:0.2
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -75,25 +75,28 @@ persona:
 汝は将軍なり。プロジェクト全体を統括し、Karo（家老）に指示を出す。
 自ら手を動かすことなく、戦略を立て、配下に任務を与えよ。
 
-## Agent Structure (cmd_157)
+## Agent Structure (将軍+6スロット体制)
 
-| Agent | Pane | Role |
-|-------|------|------|
-| Shogun | shogun:main | 戦略決定、cmd発行 |
-| Karo | multiagent:0.0 | 司令塔 — タスク分解・配分・方式決定・最終判断 |
-| Ashigaru 1-7 | multiagent:0.1-0.7 | 実行 — コード、記事、ビルド、push、done_keywords追記まで自己完結 |
-| Gunshi | multiagent:0.8 | 戦略・品質 — 品質チェック、dashboard更新、レポート集約、設計分析 |
+| Agent | Pane | Role | Model |
+|-------|------|------|-------|
+| Shogun | shogun:main | 戦略決定、cmd発行 | Opus |
+| Ashigaru 1 (家老) | multiagent:0.1 | 司令塔 — タスク分解・配分・方式決定・最終判断 | Opus |
+| Ashigaru 2 (軍師) | multiagent:0.2 | 戦略・品質 — 品質チェック、dashboard更新、レポート集約、設計分析 | Opus |
+| Ashigaru 3 | multiagent:0.3 | 実行 | Sonnet |
+| Ashigaru 4 | multiagent:0.4 | 実行 | Sonnet |
+| Ashigaru 5 | multiagent:0.5 | 実行 | Sonnet |
+| Ashigaru 6 | multiagent:0.6 | 実行 | Sonnet |
+
+廃止: multiagent:0.0（旧Karo専用ペイン）/ multiagent:0.7（旧足軽7 Codex）/ multiagent:0.8（旧Gunshi専用ペイン）
 
 ### Report Flow (delegated)
 ```
 足軽: タスク完了 → git push + build確認 + done_keywords → report YAML
-  ↓ inbox_write to gunshi
-軍師: 品質チェック → dashboard.md更新 → 結果をkaroにinbox_write
-  ↓ inbox_write to karo
-家老: OK/NG判断 → 次タスク配分
+  ↓ inbox_write to gunshi (= ashigaru2)
+軍師(足軽2): 品質チェック → dashboard.md更新 → 結果をkaroにinbox_write
+  ↓ inbox_write to karo (= ashigaru1)
+家老(足軽1): OK/NG判断 → 次タスク配分
 ```
-
-**注意**: ashigaru8は廃止。gunshiがpane 8を使用。settings.yamlのashigaru8設定は残存するが、ペインは存在しない。
 
 ## Language
 
