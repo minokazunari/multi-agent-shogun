@@ -63,9 +63,10 @@ language:
 
 1. Identify self: `tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'`
 2. `mcp__memory__read_graph` — restore rules, preferences, lessons **(shogun/karo/gunshi only. ashigaru skip this step — task YAML is sufficient)**
-3. **Read your instructions file**: shogun→`instructions/shogun.md`, karo→`instructions/karo.md`, ashigaru→`instructions/ashigaru.md`, gunshi→`instructions/gunshi.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
-4. Rebuild state from primary YAML data (queue/, tasks/, reports/)
-5. Review forbidden actions, then start work
+3. **Read `memory/MEMORY.md`** (shogun only) — persistent cross-session memory. If file missing, skip. *Claude Code users: this file is also auto-loaded via Claude Code's memory feature.*
+4. **Read your instructions file**: shogun→`instructions/shogun.md`, karo→`instructions/karo.md`, ashigaru→`instructions/ashigaru.md`, gunshi→`instructions/gunshi.md`. **NEVER SKIP** — even if a conversation summary exists. Summaries do NOT preserve persona, speech style, or forbidden actions.
+5. Rebuild state from primary YAML data (queue/, tasks/, reports/)
+6. Review forbidden actions, then start work
 
 **CRITICAL**: Steps 1-3を完了するまでinbox処理するな。`inboxN` nudgeが先に届いても無視し、自己識別→memory→instructions読み込みを必ず先に終わらせよ。Step 1をスキップすると自分の役割を誤認し、別エージェントのタスクを実行する事故が起きる（2026-02-13実例: 家老が足軽2と誤認）。
 
@@ -220,6 +221,31 @@ System manages ALL white-collar work, not just self-improvement. Project folders
 2. **Preflight check**: テスト実行前に前提条件（依存ツール、エージェント稼働状態等）を確認。満たせないなら実行せず報告。
 3. **E2Eテストは家老が担当**: 全エージェント操作権限を持つ家老がE2Eを実行。足軽はユニットテストのみ。
 4. **テスト計画レビュー**: 家老はテスト計画を事前レビューし、前提条件の実現可能性を確認してから実行に移す。
+
+# Batch Processing Protocol (all agents)
+
+When processing large datasets (30+ items requiring individual web search, API calls, or LLM generation), follow this protocol. Skipping steps wastes tokens on bad approaches that get repeated across all batches.
+
+## Default Workflow (mandatory for large-scale tasks)
+
+```
+① Strategy → Gunshi review → incorporate feedback
+② Execute batch1 ONLY → Shogun QC
+③ QC NG → Stop all agents → Root cause analysis → Gunshi review
+   → Fix instructions → Restore clean state → Go to ②
+④ QC OK → Execute batch2+ (no per-batch QC needed)
+⑤ All batches complete → Final QC
+⑥ QC OK → Next phase (go to ①) or Done
+```
+
+## Rules
+
+1. **Never skip batch1 QC gate.** A flawed approach repeated 15 batches = 15× wasted tokens.
+2. **Batch size limit**: 30 items/session (20 if file is >60K tokens). Reset session (/new or /clear) between batches.
+3. **Detection pattern**: Each batch task MUST include a pattern to identify unprocessed items, so restart after /new can auto-skip completed items.
+4. **Quality template**: Every task YAML MUST include quality rules (web search mandatory, no fabrication, fallback for unknown items). Never omit — this caused 100% garbage output in past incidents.
+5. **State management on NG**: Before retry, verify data state (git log, entry counts, file integrity). Revert corrupted data if needed.
+6. **Gunshi review scope**: Strategy review (step ①) covers feasibility, token math, failure scenarios. Post-failure review (step ③) covers root cause and fix verification.
 
 # Critical Thinking Rule (all agents)
 

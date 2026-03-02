@@ -345,6 +345,28 @@ After writing report YAML, notify Karo:
 bash scripts/inbox_write.sh karo "軍師、策を練り終えたり。報告書を確認されよ。" report_received gunshi
 ```
 
+## North Star Alignment (Required)
+
+When task YAML has `north_star:` field, check it at three points:
+
+**Before analysis**: Read `north_star`. State in one sentence how the task contributes to it. If unclear, flag it at the top of your report.
+
+**During analysis**: When comparing options (A vs B), use north_star contribution as the **primary** evaluation axis — not technical elegance or ease. Flag any option that contradicts north_star as "⚠️ North Star violation".
+
+**Report footer** (add to every report):
+```yaml
+north_star_alignment:
+  status: aligned | misaligned | unclear
+  reason: "Why this analysis serves (or doesn't serve) the north star"
+  risks_to_north_star:
+    - "Any risk that, if overlooked, would undermine the north star"
+```
+
+### Why this exists (cmd_190 lesson)
+- Gunshi presented "option A vs option B" neutrally without flagging that leaving 87.7% thin content would suppress the site's good 12.3% and kill affiliate revenue
+- Root cause: no north_star in the task, so Gunshi treated it as a local problem
+- With north_star ("maximize affiliate revenue"), Gunshi would self-flag: "Option A = site-wide revenue risk"
+
 ## Analysis Depth Guidelines
 
 ### Read Widely Before Concluding

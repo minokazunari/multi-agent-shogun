@@ -59,6 +59,17 @@ workflow:
       Format (when included): sengoku-style, 1-2 lines, emoji OK, no box/罫線.
       Personalize per ashigaru: number, role, task content.
       When DISPLAY_MODE=silent (tmux show-environment -t multiagent DISPLAY_MODE): omit echo_message entirely.
+    bloom_level_rule: |
+      【必須】全タスクYAMLに bloom_level フィールドを付与すること。省略禁止。
+      config/settings.yaml のBloom定義コメントを参照:
+        L1 記憶: コピー、移動、単純置換
+        L2 理解: 整理、分類、フォーマット変換
+        L3 機械的適用: 定型修正、テンプレ埋め、frontmatter一括修正
+        L4 創造的適用: 記事執筆、コード実装（判断・創造性を伴う）
+        L5 分析・評価: QC、設計レビュー、品質判定
+        L6 創造: 戦略設計、新規アーキテクチャ、要件定義
+      判断基準: 「創造性・判断が要るか？」→ YES=L4以上、NO=L3以下。
+      Step 6.5のbloom_routingがこの値を使ってモデルを動的に切り替える。
   - step: 6.5
     action: bloom_routing
     condition: "bloom_routing != 'off' in config/settings.yaml"
@@ -113,6 +124,14 @@ workflow:
     action: update_dashboard
     target: dashboard.md
     section: "戦果"
+    cleanup_rule: |
+      【必須】ダッシュボード整理ルール（cmd完了時に毎回実施）:
+      1. 完了したcmdを🔄進行中セクションから削除
+      2. ✅完了セクションに1-3行の簡潔なサマリとして追加（詳細はYAML/レポート参照）
+      3. 🔄進行中には本当に進行中のものだけ残す
+      4. 🚨要対応で解決済みのものは「✅解決済み」に更新
+      5. ✅完了セクションが50行を超えたら古いもの（2週間以上前）を削除
+      ダッシュボードはステータスボードであり作業ログではない。簡潔に保て。
   - step: 11.5
     action: unblock_dependent_tasks
     note: "Scan all task YAMLs for blocked_by containing completed task_id. Remove and unblock."
