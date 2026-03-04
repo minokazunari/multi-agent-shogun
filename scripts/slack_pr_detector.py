@@ -19,6 +19,25 @@ _APPROVAL_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+# Phase 1 completion pattern: bot's own message in #shogun
+# e.g. "🏯 PR #89 Phase 1分析完了"
+_PHASE1_DONE_PATTERN = re.compile(
+    r"PR\s+#?(\d+)\s+Phase\s*1.*(?:分析完了|analysis complete)",
+    re.IGNORECASE,
+)
+
+
+def detect_phase1_done(text: str) -> Optional[int]:
+    """
+    Detect a Phase 1 completion message (posted by bot to #shogun).
+
+    Returns the PR number (int) if matched, None otherwise.
+    """
+    match = _PHASE1_DONE_PATTERN.search(text)
+    if not match:
+        return None
+    return int(match.group(1))
+
 
 def detect_pr_url(text: str) -> Optional[dict]:
     """

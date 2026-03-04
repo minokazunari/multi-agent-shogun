@@ -22,7 +22,7 @@ import yaml
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-from slack_pr_detector import detect_approval, detect_pr_url
+from slack_pr_detector import detect_approval, detect_phase1_done, detect_pr_url
 
 # ── Environment ──────────────────────────────────────────────────────────────
 SCRIPT_DIR = os.environ["SCRIPT_DIR"]
@@ -207,13 +207,13 @@ def handle_approval(text: str) -> None:
     reviews = load_reviews()
     target = None
     for r in reviews:
-        if r.get("pr_number") == pr_number and r.get("status") == "phase1_done":
+        if r.get("pr_number") == pr_number and r.get("status") in ("phase1_done", "phase1_running"):
             target = r
             break
 
     if not target:
         print(
-            f"[slack_pr_listener] approve #{pr_number}: no phase1_done entry found, ignoring.",
+            f"[slack_pr_listener] approve #{pr_number}: no reviewable entry found, ignoring.",
             file=sys.stderr,
         )
         return
@@ -243,19 +243,36 @@ def handle_approval(text: str) -> None:
     )
 
 
+def handle_phase1_done_detection(text: str) -> None:
+    """
+    Detect bot's own Phase 1 analysis message in #shogun.
+    Auto-transition pr_reviews.yaml status from phase1_running to phase1_done.
+    """
+    pr_number = detect_phase1_done(text)
+    if pr_number is None:
+        return
+
+    reviews = load_reviews()
+    for r in reviews:
+        if r.get("pr_number") == pr_number and r.get("status") == "phase1_running":
+            r["status"] = "phase1_done"
+            save_reviews(reviews)
+            print(
+                f"[slack_pr_listener] PR #{pr_number} Phase 1 done — status updated to phase1_done",
+                file=sys.stderr,
+            )
+            return
+
+
 @app.event("message")
 def handle_message(event, say):
-    # Skip bot's own messages
     user = event.get("user", "")
-    if user == get_bot_user_id():
+    text = event.get("text", "")
+    if not text:
         return
 
     # Skip message subtypes (edits, joins, etc.)
     if event.get("subtype"):
-        return
-
-    text = event.get("text", "")
-    if not text:
         return
 
     channel_id = event.get("channel", "")
@@ -264,8 +281,14 @@ def handle_message(event, say):
         file=sys.stderr,
     )
 
+    # Bot's own messages: only check for Phase 1 completion in #shogun
+    if user == get_bot_user_id():
+        if SHOGUN_CHANNEL_ID and channel_id == SHOGUN_CHANNEL_ID:
+            handle_phase1_done_detection(text)
+        return
+
     if SHOGUN_CHANNEL_ID and channel_id == SHOGUN_CHANNEL_ID:
-        # #shogun: listen for approval commands only
+        # #shogun: listen for approval commands
         handle_approval(text)
     else:
         # Other channels: listen for PR URLs

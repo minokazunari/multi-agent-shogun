@@ -9,7 +9,7 @@ import pytest
 # Add scripts/ to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
-from slack_pr_detector import detect_pr_url, detect_approval
+from slack_pr_detector import detect_pr_url, detect_approval, detect_phase1_done
 
 
 # ===========================================================================
@@ -126,3 +126,29 @@ class TestDetectApproval:
 
     def test_japanese_approval_with_surrounding_text(self):
         assert detect_approval("この対応で承認 42 お願いします") == 42
+
+
+# ===========================================================================
+# detect_phase1_done tests
+# ===========================================================================
+
+class TestDetectPhase1Done:
+    """Tests for detect_phase1_done()"""
+
+    def test_japanese_format(self):
+        text = "🏯 PR #89 Phase 1分析完了 (minokazunari/api_edu)"
+        assert detect_phase1_done(text) == 89
+
+    def test_english_format(self):
+        text = "PR #42 Phase 1 analysis complete"
+        assert detect_phase1_done(text) == 42
+
+    def test_no_hash(self):
+        text = "PR 89 Phase1分析完了"
+        assert detect_phase1_done(text) == 89
+
+    def test_no_match(self):
+        assert detect_phase1_done("Regular message") is None
+
+    def test_empty(self):
+        assert detect_phase1_done("") is None
