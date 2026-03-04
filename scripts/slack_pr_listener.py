@@ -105,6 +105,7 @@ def create_pr_task(pr_info: dict, phase: int = 1) -> str:
             "repo": pr_info["repo"],
             "pr_url": pr_info["pr_url"],
             "slack_channel": pr_info.get("slack_channel", ""),
+            "message_ts": pr_info.get("message_ts", ""),
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
     }
@@ -119,12 +120,14 @@ def create_pr_task(pr_info: dict, phase: int = 1) -> str:
     return task_path
 
 
-def send_slack_channel(channel_id: str, message: str) -> None:
-    """Post a message to the specified Slack channel via slack_send_channel.sh."""
-    subprocess.run(
-        ["bash", os.path.join(SCRIPT_DIR, "scripts", "slack_send_channel.sh"), channel_id, message],
-        capture_output=True,
-    )
+def send_slack_channel(channel_id: str, message: str, thread_ts: str = "") -> None:
+    """Post a message to the specified Slack channel via slack_send_channel.sh.
+    If thread_ts is provided, posts as a thread reply.
+    """
+    cmd = ["bash", os.path.join(SCRIPT_DIR, "scripts", "slack_send_channel.sh"), channel_id, message]
+    if thread_ts:
+        cmd.append(thread_ts)
+    subprocess.run(cmd, capture_output=True)
 
 
 def write_inbox(target: str, content: str, msg_type: str, sender: str) -> None:
@@ -144,7 +147,7 @@ def write_inbox(target: str, content: str, msg_type: str, sender: str) -> None:
 
 # ── Handlers ─────────────────────────────────────────────────────────────────
 
-def handle_pr_detection(text: str, channel_id: str) -> None:
+def handle_pr_detection(text: str, channel_id: str, message_ts: str = "") -> None:
     """
     Detect a PR URL in a non-#shogun channel message.
     If detected and not already being processed, kick off Phase 1.
@@ -168,8 +171,8 @@ def handle_pr_detection(text: str, channel_id: str) -> None:
 
     print(f"[slack_pr_listener] PR #{pr_number} detected in channel {channel_id}", file=sys.stderr)
 
-    # Notify source channel
-    send_slack_channel(channel_id, f"🔍 PR #{pr_number} detected. Starting review...")
+    # Notify source channel (thread reply to the original message)
+    send_slack_channel(channel_id, f"🔍 PR #{pr_number} detected. Starting review...", message_ts)
 
     # Add entry to pr_reviews.yaml
     reviews.append({
@@ -178,12 +181,14 @@ def handle_pr_detection(text: str, channel_id: str) -> None:
         "repo": pr_info["repo"],
         "pr_url": pr_info["pr_url"],
         "slack_channel": channel_id,
+        "message_ts": message_ts,
         "status": "phase1_running",
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
     })
     save_reviews(reviews)
 
-    # Write Phase 1 task YAML
+    # Write Phase 1 task YAML (include message_ts for thread replies)
+    pr_info["message_ts"] = message_ts
     task_path = create_pr_task(pr_info, phase=1)
 
     # Notify joushu (城主) via inbox
@@ -224,13 +229,14 @@ def handle_approval(text: str) -> None:
     target["status"] = "approved"
     save_reviews(reviews)
 
-    # Write Phase 2 task YAML (overwrite same file)
+    # Write Phase 2 task YAML (overwrite same file, include message_ts for thread reply)
     pr_info = {
         "pr_number": target["pr_number"],
         "owner": target["owner"],
         "repo": target["repo"],
         "pr_url": target["pr_url"],
         "slack_channel": target.get("slack_channel", ""),
+        "message_ts": target.get("message_ts", ""),
     }
     task_path = create_pr_task(pr_info, phase=2)
 
@@ -287,12 +293,14 @@ def handle_message(event, say):
             handle_phase1_done_detection(text)
         return
 
+    message_ts = event.get("ts", "")
+
     if SHOGUN_CHANNEL_ID and channel_id == SHOGUN_CHANNEL_ID:
         # #shogun: listen for approval commands
         handle_approval(text)
     else:
-        # Other channels: listen for PR URLs
-        handle_pr_detection(text, channel_id)
+        # Other channels: listen for PR URLs (pass ts for thread replies)
+        handle_pr_detection(text, channel_id, message_ts)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
