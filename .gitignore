@@ -97,6 +97,9 @@
 !scripts/agent_status.sh
 !scripts/ratelimit_check.sh
 !scripts/switch_cli.sh
+!scripts/slack_pr_detector.py
+!scripts/slack_pr_listener.py
+!scripts/slack_send_channel.sh
 
 
 # SayTask (sample template only, not actual data)
@@ -174,6 +177,7 @@ tests/specs/osato_lms_*
 !tests/e2e/fixtures/*.yaml
 !tests/e2e/mock_behaviors/
 !tests/e2e/mock_behaviors/*.sh
+!tests/*.py
 !tests/test_helper/
 !tests/test_helper/README.md
 
@@ -185,3 +189,4 @@ tests/specs/osato_lms_*
 # Android companion app
 !android/
 !android/**
+config/slack_auth.env
