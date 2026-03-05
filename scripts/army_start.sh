@@ -21,12 +21,11 @@ tmux new-session -d -s shogun -x 220 -y 55
 # Rename window to "main" (required by watcher_supervisor.sh: "shogun:main.0")
 tmux rename-window -t shogun:0 main
 
-# Create 5 more panes (split sequentially to build up 6 total)
-tmux split-window -t shogun:main.0 -v
-tmux split-window -t shogun:main.1 -v
-tmux split-window -t shogun:main.2 -v
-tmux split-window -t shogun:main.3 -v
-tmux split-window -t shogun:main.4 -v
+# Create 5 more panes (split with tiled re-balance to avoid "no space" error)
+for i in 1 2 3 4 5; do
+    tmux split-window -t shogun:main
+    tmux select-layout -t shogun:main tiled
+done
 
 # Apply main-vertical layout: pane 0 on left (large), panes 1-5 on right (stacked)
 tmux select-layout -t shogun:main main-vertical

@@ -38,3 +38,10 @@ bash $WORKDIR/scripts/watcher_supervisor.sh &
 echo "Daishogun started. Linux army launched via SSH."
 echo "  daishogun:0.0 = daishogun (opus)"
 echo "  Linux log: mino@192.168.0.194:/tmp/army_start.log"
+
+# Attach to daishogun session
+if [ -n "${TMUX:-}" ]; then
+    exec tmux switch-client -t daishogun
+else
+    exec tmux attach-session -t daishogun
+fi
