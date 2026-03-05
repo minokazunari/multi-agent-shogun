@@ -73,8 +73,10 @@ workflow:
   - step: 6.5
     action: bloom_routing
     condition: "bloom_routing != 'off' in config/settings.yaml"
+    mandatory: true
     note: |
-      Dynamic Model Routing (Issue #53) — bloom_routing が off 以外の時のみ実行。
+      【必須】Dynamic Model Routing (Issue #53) — bloom_routing が off 以外の時のみ実行。
+      ※ このステップをスキップすると、能力不足のモデルにタスクが振られる。必ず実行せよ。
       bloom_routing: "manual" → 必要に応じて手動でルーティング
       bloom_routing: "auto"   → 全タスクで自動ルーティング
 
@@ -850,6 +852,8 @@ Route these to Gunshi via `queue/tasks/gunshi.yaml`:
 Ashigaru handle implementation only: article creation, code changes, file operations.
 
 ## Model Configuration (大将軍体制)
+
+**実際のモデル割当は `config/settings.yaml` の `agents:` セクションが正（この表はデフォルト概要）。**
 
 | Agent | Model | Pane | Role |
 |-------|-------|------|------|
