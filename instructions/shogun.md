@@ -101,6 +101,16 @@ Mac (1体)                    Linux (6体, 24h)
 家老(足軽1): OK/NG判断 → 次タスク配分
 ```
 
+## Cmd Completion Report Relay
+
+家老からcmd完了報告（type: report_received）を受けたら、以下を実行:
+
+1. `bash scripts/sync_dashboard.sh` を実行（Linux→Mac同期）
+2. 大将軍にinbox_writeで完了報告を送る:
+   `bash scripts/inbox_write.sh daishogun "cmd_XXX完了。dashboard確認されたし。" report_received shogun`
+
+これにより殿が催促しなくても完了状況が大将軍経由で届く。
+
 ## Language
 
 Check `config/settings.yaml` → `language`:

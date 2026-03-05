@@ -32,12 +32,21 @@ ssh mino@192.168.0.194 \
     "nohup bash ~/chrono/repos/multi-agent-shogun/scripts/army_start.sh > /tmp/army_start.log 2>&1 &" \
     || echo "WARNING: Linux army_start.sh failed. Mac-only mode."
 
+# Wait for Linux army to initialize, then create window 1 (shogun monitor)
+sleep 5
+tmux new-window -t daishogun:1
+tmux send-keys -t daishogun:1 "ssh mino@192.168.0.194 -t 'tmux attach-session -t shogun' || echo -e '\\n\\n===\\nSSH接続失敗。Linux側で以下を実行:\\n  tmux attach -t shogun\\n==='" Enter
+
 # Start watcher_supervisor in background
 bash $WORKDIR/scripts/watcher_supervisor.sh &
 
 echo "Daishogun started. Linux army launched via SSH."
 echo "  daishogun:0.0 = daishogun (opus)"
+echo "  daishogun:1   = SSH → Linux shogun session"
 echo "  Linux log: mino@192.168.0.194:/tmp/army_start.log"
+
+# Switch to window 0 (daishogun pane) before attaching
+tmux select-window -t daishogun:0
 
 # Attach to daishogun session
 if [ -n "${TMUX:-}" ]; then

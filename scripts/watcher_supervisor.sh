@@ -18,7 +18,7 @@ ensure_inbox_file() {
 
 pane_exists() {
     local pane="$1"
-    tmux list-panes -a -F "#{session_name}:#{window_name}.#{pane_index}" 2>/dev/null | grep -qx "$pane"
+    tmux list-panes -a -F "#{session_name}:#{window_index}.#{pane_index}" 2>/dev/null | grep -qx "$pane"
 }
 
 start_watcher_if_missing() {
@@ -32,7 +32,7 @@ start_watcher_if_missing() {
         return 0
     fi
 
-    if pgrep -f "scripts/inbox_watcher.sh ${agent} " >/dev/null 2>&1; then
+    if pgrep -f "[s]cripts/inbox_watcher.sh ${agent} " >/dev/null 2>&1; then
         return 0
     fi
 

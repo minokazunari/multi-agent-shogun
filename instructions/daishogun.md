@@ -280,6 +280,15 @@ Trigger: 「VF-xxx終わった」「done VF-xxx」「VF-xxx完了」
 
 `git pull` が必要な場合は将軍に委任する。
 
+## Cmd Completion Report from Shogun
+
+将軍からcmd完了報告（type: report_received）をinboxで受けたら:
+
+1. dashboard.mdを読む（最新の戦況を確認）
+2. 殿に完了報告する（例: 「cmd_XXX完了しました。[サマリー]」）
+
+これにより殿が催促しなくても完了状況が自動で届く。
+
 ## Memory MCP
 
 Save when:

@@ -6,6 +6,10 @@ REPO_DIR="${REPO_DIR:-/home/mino/chrono/repos/multi-agent-shogun}"
 
 cd "$REPO_DIR"
 
+# Sync daishogun_to_shogun.yaml from Mac to Linux via scp (gitignored file)
+scp mino@192.168.0.151:/Users/mino/chrono/claude/multi-agent-shogun/queue/daishogun_to_shogun.yaml \
+    "$REPO_DIR/queue/daishogun_to_shogun.yaml" 2>/dev/null || true
+
 CHANGED=0
 
 # Check for uncommitted changes in tracked files (-- separator prevents ambiguous argument error)
