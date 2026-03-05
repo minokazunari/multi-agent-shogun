@@ -75,7 +75,7 @@ except Exception:
     print('~/multi-agent-shogun')
 " 2>/dev/null || echo "~/multi-agent-shogun")
         ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no "$AGENT_HOST" \
-            "bash ${REMOTE_REPO}/scripts/inbox_write.sh '$TARGET' '$CONTENT' '$TYPE' '$FROM'" \
+            "INBOX_LOCAL_ONLY=1 bash ${REMOTE_REPO}/scripts/inbox_write.sh '$TARGET' '$CONTENT' '$TYPE' '$FROM'" \
             2>&1 || { echo "[inbox_write] SSH delivery to $AGENT_HOST failed for target=$TARGET" >&2; exit 1; }
         exit 0
     fi
