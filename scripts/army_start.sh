@@ -2,13 +2,9 @@
 set -e
 
 # army_start.sh — Linux 6-pane startup for shogun army
-# Pane layout: main-vertical (left=shogun large, right=5 panes stacked)
-#   Pane 0: shogun   (opus)
-#   Pane 1: karo     (opus)
-#   Pane 2: gunshi   (opus)
-#   Pane 3: ashigaru1 (sonnet)
-#   Pane 4: ashigaru2 (sonnet)
-#   Pane 5: ashigaru3 (sonnet)
+# Pane layout: 2-column (left 50% = shogun+karo, right 50% = gunshi+ashigaru1-3)
+#   Left column:  pane 0 (shogun), pane 1 (karo)
+#   Right column: pane 2 (gunshi), pane 3 (ashigaru1), pane 4 (ashigaru2), pane 5 (ashigaru3)
 
 WORKDIR=/home/mino/chrono/repos/multi-agent-shogun
 
@@ -21,14 +17,20 @@ tmux new-session -d -s shogun -x 220 -y 55
 # Rename window to "main" (required by watcher_supervisor.sh: "shogun:main.0")
 tmux rename-window -t shogun:0 main
 
-# Create 5 more panes (split with tiled re-balance to avoid "no space" error)
-for i in 1 2 3 4 5; do
-    tmux split-window -t shogun:main
-    tmux select-layout -t shogun:main tiled
-done
+# Build 2-column layout: left 50% (2 panes), right 50% (4 panes)
+# Start: pane 0 = full window
 
-# Apply main-vertical layout: pane 0 on left (large), panes 1-5 on right (stacked)
-tmux select-layout -t shogun:main main-vertical
+# Split horizontally: left (pane 0) | right (pane 1) — 50/50
+tmux split-window -h -t shogun:main.0 -l 50%
+
+# Split left column vertically: pane 0 (shogun) / pane 1 (karo)
+tmux split-window -v -t shogun:main.0 -l 50%
+
+# Split right column vertically into 4 panes
+# After left split, right pane is now pane 2
+tmux split-window -v -t shogun:main.2 -l 75%
+tmux split-window -v -t shogun:main.3 -l 67%
+tmux split-window -v -t shogun:main.4 -l 50%
 
 # Set agent IDs
 tmux set-option -p -t shogun:main.0 @agent_id shogun
