@@ -8,11 +8,11 @@ cd "$REPO_DIR"
 
 CHANGED=0
 
-# Check for uncommitted changes in tracked files
-git diff --quiet dashboard.md queue/reports/ || CHANGED=1
+# Check for uncommitted changes in tracked files (-- separator prevents ambiguous argument error)
+git diff --quiet -- dashboard.md queue/reports/ 2>/dev/null || CHANGED=1
 
 # Check for untracked or newly staged files in target paths
-git status --porcelain dashboard.md queue/reports/ | grep -q . && CHANGED=1
+git status --porcelain -- dashboard.md queue/reports/ 2>/dev/null | grep -q . && CHANGED=1 || true
 
 if [ "$CHANGED" -eq 0 ]; then
     echo "sync: no changes detected. Skipping commit."

@@ -57,6 +57,7 @@ except Exception:
 }
 
 # Route to remote machine if needed
+SSH_FALLBACK=0
 if [ -z "${INBOX_LOCAL_ONLY:-}" ]; then
     AGENT_HOST=$(get_agent_host "$TARGET")
     if [ "$AGENT_HOST" != "local" ]; then
@@ -74,10 +75,15 @@ try:
 except Exception:
     print('~/multi-agent-shogun')
 " 2>/dev/null || echo "~/multi-agent-shogun")
-        ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no "$AGENT_HOST" \
+        if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no "$AGENT_HOST" \
             "INBOX_LOCAL_ONLY=1 bash ${REMOTE_REPO}/scripts/inbox_write.sh '$TARGET' '$CONTENT' '$TYPE' '$FROM'" \
-            2>&1 || { echo "[inbox_write] SSH delivery to $AGENT_HOST failed for target=$TARGET" >&2; exit 1; }
-        exit 0
+            2>/dev/null; then
+            exit 0
+        else
+            # SSH failed — write locally then git+notify as fallback
+            echo "[inbox_write] SSH failed for $AGENT_HOST, falling back to git+notify" >&2
+            SSH_FALLBACK=1
+        fi
     fi
 fi
 
@@ -189,3 +195,13 @@ except Exception as e:
         fi
     fi
 done
+
+# Fallback post-write: git push + notify so remote machine can pull
+if [ "$SSH_FALLBACK" = "1" ]; then
+    (cd "$SCRIPT_DIR" && \
+     git add "queue/inbox/${TARGET}.yaml" 2>/dev/null && \
+     git commit -m "sync: inbox ${TARGET}" --no-verify 2>/dev/null && \
+     git push origin main 2>/dev/null) || true
+    bash "$SCRIPT_DIR/scripts/ntfy.sh" "📬 inbox sync: ${TARGET} ← ${FROM} (git pull required)" 2>/dev/null || true
+    bash "$SCRIPT_DIR/scripts/slack_send_channel.sh" shogun "📬 inbox sync: ${TARGET} ← ${FROM}. git pullせよ。" 2>/dev/null || true
+fi
