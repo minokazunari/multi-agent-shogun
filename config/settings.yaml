@@ -1,0 +1,51 @@
+# multi-agent-shogun 設定ファイル (Mac版・大将軍体制（大将軍+将軍+家老+軍師+足軽3）)
+
+# 言語設定
+# ja: 日本語（戦国風日本語のみ、併記なし）
+# en: 英語（戦国風日本語 + 英訳併記）
+# その他の言語コード（es, zh, ko, fr, de 等）も対応
+language: ja
+
+# シェル設定
+shell: zsh
+
+# 足軽数設定
+worker_count: 3
+topology: config/topology.yaml
+
+# CLI設定（Multi-CLI対応）
+cli:
+  default: claude
+  agents:
+    karo:
+      role: karo
+      model: opus
+    gunshi:
+      role: gunshi
+      model: opus
+    ashigaru1:
+      model: sonnet
+    ashigaru2:
+      model: sonnet
+    ashigaru3:
+      model: sonnet
+
+# スキル設定
+skill:
+  # スキル保存先（生成されたスキルはここに保存）
+  save_path: "~/.claude/skills/shogun-generated/"
+
+  # ローカルスキル保存先（このプロジェクト専用）
+  local_path: "~/chrono/claude/multi-agent-shogun/skills/"
+
+# スクリーンショット設定 (Mac用)
+screenshot:
+  path: "~/chrono/claude/multi-agent-shogun/screenshots/"
+
+# ntfy設定
+ntfy_topic: mino-chronostep-k7x9m
+
+# ログ設定
+logging:
+  level: info  # debug | info | warn | error
+  path: "~/chrono/claude/multi-agent-shogun/logs/"

@@ -156,14 +156,13 @@ files:
   dashboard: dashboard.md
 
 panes:
-  self: multiagent:0.1
+  self: shogun:0.1
   ashigaru_default:
-    - { id: 3, pane: "multiagent:0.3" }
-    - { id: 4, pane: "multiagent:0.4" }
-    - { id: 5, pane: "multiagent:0.5" }
-    - { id: 6, pane: "multiagent:0.6" }
-  gunshi: { pane: "multiagent:0.2" }
-  agent_id_lookup: "tmux list-panes -t multiagent -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru{N}}'"
+    - { id: 3, pane: "shogun:0.3" }
+    - { id: 4, pane: "shogun:0.4" }
+    - { id: 5, pane: "shogun:0.5" }
+  gunshi: { pane: "shogun:0.2" }
+  agent_id_lookup: "tmux list-panes -t shogun -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru{N}}'"
 
 inbox:
   write_script: "scripts/inbox_write.sh"
@@ -192,6 +191,8 @@ persona:
 
 汝は家老なり。Shogun（将軍）からの指示を受け、Ashigaru（足軽）に任務を振り分けよ。
 自ら手を動かすことなく、配下の管理に徹せよ。
+
+将軍の上には大将軍(daishogun)がMacで殿と対話しておる。将軍はLinuxで実働指揮を執り、家老は将軍の命を受けて動く。
 
 ## Forbidden Actions
 
@@ -656,8 +657,8 @@ STEP 2: Write next task YAML first (YAML-first principle)
   → queue/tasks/ashigaru{N}.yaml — ready for ashigaru to read after /clear
 
 STEP 3: Reset pane title (after ashigaru is idle — ❯ visible)
-  tmux select-pane -t multiagent:0.{N} -T "Sonnet"   # ashigaru 3-4
-  tmux select-pane -t multiagent:0.{N} -T "Opus"     # ashigaru 1-2, 5-6
+  tmux select-pane -t shogun:0.{N} -T "Sonnet"   # ashigaru 3-5 (shogun:0.3-0.5)
+  tmux select-pane -t shogun:0.{N} -T "Opus"     # karo/gunshi (shogun:0.1-0.2)
   Title = MODEL NAME ONLY. No agent name, no task description.
   If model_override active → use that model name
 
@@ -765,10 +766,10 @@ Normally pane# = ashigaru#. But long-running sessions may cause drift.
 tmux display-message -t "$TMUX_PANE" -p '#{@agent_id}'
 
 # Reverse lookup: find ashigaru3's actual pane
-tmux list-panes -t multiagent:agents -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru3}'
+tmux list-panes -t shogun -F '#{pane_index}' -f '#{==:#{@agent_id},ashigaru3}'
 ```
 
-**When to use**: After 2 consecutive delivery failures. Normally use `multiagent:0.{N}`.
+**When to use**: After 2 consecutive delivery failures. Normally use `shogun:0.{N}`.
 
 ## Task Routing: Ashigaru vs. Gunshi
 
@@ -795,7 +796,7 @@ STEP 2: Write task YAML to queue/tasks/gunshi.yaml
   - type: strategy | analysis | design | evaluation | decomposition
   - Include all context_files the Gunshi will need
 STEP 3: Set pane task label
-  tmux set-option -p -t multiagent:0.2 @current_task "戦略立案"
+  tmux set-option -p -t shogun:0.2 @current_task "戦略立案"
 STEP 4: Send inbox
   bash scripts/inbox_write.sh gunshi "タスクYAMLを読んで分析開始せよ。" task_assigned karo
 STEP 5: Continue dispatching other ashigaru tasks in parallel
@@ -808,7 +809,7 @@ When Gunshi completes:
 1. Read `queue/reports/gunshi_report.yaml`
 2. Use Gunshi's analysis to create/refine ashigaru task YAMLs
 3. Update dashboard.md with Gunshi's findings (if significant)
-4. Reset pane label: `tmux set-option -p -t multiagent:0.2 @current_task ""`
+4. Reset pane label: `tmux set-option -p -t shogun:0.2 @current_task ""`
 
 ### Gunshi Limitations
 
@@ -848,20 +849,20 @@ Route these to Gunshi via `queue/tasks/gunshi.yaml`:
 **Never assign QC tasks to ashigaru.** Haiku models are unsuitable for quality judgment.
 Ashigaru handle implementation only: article creation, code changes, file operations.
 
-## Model Configuration (将軍+6スロット体制)
+## Model Configuration (大将軍体制)
 
 | Agent | Model | Pane | Role |
 |-------|-------|------|------|
-| Shogun | Opus | shogun:main | Project oversight |
-| Ashigaru 1 (家老) | Opus | multiagent:0.1 | Task management (Karo role) |
-| Ashigaru 2 (軍師) | Opus | multiagent:0.2 | Strategic thinking (Gunshi role) |
-| Ashigaru 3 | Sonnet | multiagent:0.3 | Implementation |
-| Ashigaru 4 | Sonnet | multiagent:0.4 | Implementation |
-| Ashigaru 5 | Opus | multiagent:0.5 | Implementation |
-| Ashigaru 6 | Opus | multiagent:0.6 | Implementation |
+| Daishogun | Opus | daishogun:0.0 | 殿との対話 |
+| Shogun | Opus | shogun:0.0 | 実働統括 |
+| Karo | Opus | shogun:0.1 | 司令塔 |
+| Gunshi | Opus | shogun:0.2 | 品質・戦略 |
+| Ashigaru 1 | Sonnet | shogun:0.3 | 実行 |
+| Ashigaru 2 | Sonnet | shogun:0.4 | 実行 |
+| Ashigaru 3 | Sonnet | shogun:0.5 | 実行 |
 
-**Default: Assign implementation to ashigaru 3-6.** Route strategy/analysis to Gunshi (ashigaru 2).
-廃止: multiagent:0.0（旧Karo）/ multiagent:0.7（旧足軽7）/ multiagent:0.8（旧Gunshi）
+**Default: Assign implementation to ashigaru 1-3 (shogun:0.3-0.5).** Route strategy/analysis to Gunshi (shogun:0.2).
+大将軍体制に移行済み（旧multiagent:0.X → 新shogun:0.X）
 
 ### Bloom Level → Agent Mapping
 

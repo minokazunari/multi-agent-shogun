@@ -40,16 +40,20 @@ start_watcher_if_missing() {
     nohup bash scripts/inbox_watcher.sh "$agent" "$pane" "$cli" >> "$log_file" 2>&1 &
 }
 
+OS="$(uname -s)"
+
 while true; do
-    start_watcher_if_missing "shogun" "shogun:main.0" "logs/inbox_watcher_shogun.log"
-    start_watcher_if_missing "karo" "multiagent:agents.0" "logs/inbox_watcher_karo.log"
-    start_watcher_if_missing "ashigaru1" "multiagent:agents.1" "logs/inbox_watcher_ashigaru1.log"
-    start_watcher_if_missing "ashigaru2" "multiagent:agents.2" "logs/inbox_watcher_ashigaru2.log"
-    start_watcher_if_missing "ashigaru3" "multiagent:agents.3" "logs/inbox_watcher_ashigaru3.log"
-    start_watcher_if_missing "ashigaru4" "multiagent:agents.4" "logs/inbox_watcher_ashigaru4.log"
-    start_watcher_if_missing "ashigaru5" "multiagent:agents.5" "logs/inbox_watcher_ashigaru5.log"
-    start_watcher_if_missing "ashigaru6" "multiagent:agents.6" "logs/inbox_watcher_ashigaru6.log"
-    start_watcher_if_missing "ashigaru7" "multiagent:agents.7" "logs/inbox_watcher_ashigaru7.log"
-    start_watcher_if_missing "gunshi" "multiagent:agents.8" "logs/inbox_watcher_gunshi.log"
+    if [ "$OS" = "Darwin" ]; then
+        # Mac版: 大将軍のみ監視
+        start_watcher_if_missing "daishogun" "daishogun:0.0" "logs/inbox_watcher_daishogun.log"
+    else
+        # Linux版: 将軍/家老/軍師/足軽を監視
+        start_watcher_if_missing "shogun"    "shogun:0.0" "logs/inbox_watcher_shogun.log"
+        start_watcher_if_missing "karo"      "shogun:0.1" "logs/inbox_watcher_karo.log"
+        start_watcher_if_missing "gunshi"    "shogun:0.2" "logs/inbox_watcher_gunshi.log"
+        start_watcher_if_missing "ashigaru1" "shogun:0.3" "logs/inbox_watcher_ashigaru1.log"
+        start_watcher_if_missing "ashigaru2" "shogun:0.4" "logs/inbox_watcher_ashigaru2.log"
+        start_watcher_if_missing "ashigaru3" "shogun:0.5" "logs/inbox_watcher_ashigaru3.log"
+    fi
     sleep 5
 done

@@ -1,0 +1,18 @@
+# Agent physical topology — used by inbox_write.sh for cross-machine routing
+version: "1.0"
+
+machines:
+  mac:
+    host: localhost
+    agents: [daishogun]
+  linux:
+    host: 192.168.0.194
+    user: mino
+    repo_path: /home/mino/chrono/repos/multi-agent-shogun
+    agents: [shogun, karo, gunshi, ashigaru1, ashigaru2, ashigaru3]
+
+# Fallback mode: when Linux is down, Mac runs all agents locally
+# In fallback, topology is overridden by fallback_start.sh settings
+fallback:
+  mac_only: true
+  agents: [daishogun, karo, gunshi, ashigaru1, ashigaru2, ashigaru3]

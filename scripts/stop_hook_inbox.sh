@@ -72,12 +72,19 @@ if [ -n "$LAST_MSG" ]; then
         NOTIFY_CONTENT="${AGENT_ID}、エラーで停止。確認されたし。"
     fi
 
-    # Send notification to karo (background, non-blocking)
-    # Shogun doesn't report to karo — skip notification
-    if [ -n "$NOTIFY_TYPE" ] && [ "$AGENT_ID" != "shogun" ]; then
-        bash "$SCRIPT_DIR/scripts/inbox_write.sh" karo \
-            "$NOTIFY_CONTENT" \
-            "$NOTIFY_TYPE" "$AGENT_ID" &
+    # Send notification (background, non-blocking)
+    # Shogun: doesn't report to karo — skip
+    # Daishogun: reports to shogun (not karo)
+    if [ -n "$NOTIFY_TYPE" ]; then
+        if [ "$AGENT_ID" = "daishogun" ]; then
+            bash "$SCRIPT_DIR/scripts/inbox_write.sh" shogun \
+                "$NOTIFY_CONTENT" \
+                "$NOTIFY_TYPE" "$AGENT_ID" &
+        elif [ "$AGENT_ID" != "shogun" ]; then
+            bash "$SCRIPT_DIR/scripts/inbox_write.sh" karo \
+                "$NOTIFY_CONTENT" \
+                "$NOTIFY_TYPE" "$AGENT_ID" &
+        fi
     fi
 fi
 

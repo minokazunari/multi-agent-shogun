@@ -23,6 +23,8 @@
 # Claude Code settings (spinner verbs only, no secrets)
 !.claude/
 !.claude/settings.json
+!.claude/hooks/
+!.claude/hooks/load_role_instructions.sh
 
 # Instructions (core OSS)
 !instructions/
@@ -30,6 +32,7 @@
 !instructions/karo.md
 !instructions/ashigaru.md
 !instructions/gunshi.md
+!instructions/daishogun.md
 
 # Multi-CLI: CLI-specific tool descriptions
 !instructions/cli_specific/
@@ -69,6 +72,8 @@
 # Config (sample files only, no secrets)
 !config/
 !config/ntfy_auth.env.sample
+!config/topology.yaml
+!config/settings.yaml
 
 # Templates
 !templates/
@@ -100,6 +105,10 @@
 !scripts/slack_pr_detector.py
 !scripts/slack_pr_listener.py
 !scripts/slack_send_channel.sh
+!scripts/army_start.sh
+!scripts/daishogun_start.sh
+!scripts/fallback_start.sh
+!scripts/sync_dashboard.sh
 
 
 # SayTask (sample template only, not actual data)

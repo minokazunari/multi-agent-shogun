@@ -11,6 +11,76 @@ CONTENT="$2"
 TYPE="${3:-wake_up}"
 FROM="${4:-unknown}"
 
+TOPOLOGY="$SCRIPT_DIR/config/topology.yaml"
+
+# ─── Cross-machine routing ───
+# If topology.yaml exists and INBOX_LOCAL_ONLY is not set,
+# check if the target agent lives on a remote machine.
+# Syntax: get_agent_host <agent_id> → prints host or "local"
+get_agent_host() {
+    local agent="$1"
+    if [ ! -f "$TOPOLOGY" ]; then
+        echo "local"
+        return
+    fi
+    # Parse topology.yaml using python3 (macOS-compatible, avoids gawk-only awk syntax)
+    # Expected structure:
+    #   machines:
+    #     - id: mac
+    #       host: localhost
+    #       agents: [shogun, karo, ashigaru1, ...]
+    #     - id: linux
+    #       host: 192.168.1.100
+    #       ssh_user: ubuntu
+    #       repo_path: /home/ubuntu/multi-agent-shogun
+    #       agents: [daishogun, ...]
+    local result
+    result=$(python3 -c "
+import yaml, sys
+try:
+    with open('$TOPOLOGY') as f:
+        data = yaml.safe_load(f)
+    for m in data.get('machines', []):
+        if '$agent' in m.get('agents', []):
+            host = m.get('host', 'localhost')
+            if host in ('localhost', '127.0.0.1'):
+                print('local')
+            else:
+                user = m.get('ssh_user', '')
+                print(user + '@' + host if user else host)
+            sys.exit(0)
+    print('local')
+except Exception:
+    print('local')
+" 2>/dev/null || echo "local")
+    echo "$result"
+}
+
+# Route to remote machine if needed
+if [ -z "${INBOX_LOCAL_ONLY:-}" ]; then
+    AGENT_HOST=$(get_agent_host "$TARGET")
+    if [ "$AGENT_HOST" != "local" ]; then
+        # Extract repo_path from topology using python3
+        REMOTE_REPO=$(python3 -c "
+import yaml, sys
+try:
+    with open('$TOPOLOGY') as f:
+        data = yaml.safe_load(f)
+    for m in data.get('machines', []):
+        if '$TARGET' in m.get('agents', []):
+            print(m.get('repo_path', '~/multi-agent-shogun'))
+            sys.exit(0)
+    print('~/multi-agent-shogun')
+except Exception:
+    print('~/multi-agent-shogun')
+" 2>/dev/null || echo "~/multi-agent-shogun")
+        ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no "$AGENT_HOST" \
+            "bash ${REMOTE_REPO}/scripts/inbox_write.sh '$TARGET' '$CONTENT' '$TYPE' '$FROM'" \
+            2>&1 || { echo "[inbox_write] SSH delivery to $AGENT_HOST failed for target=$TARGET" >&2; exit 1; }
+        exit 0
+    fi
+fi
+
 INBOX="$SCRIPT_DIR/queue/inbox/${TARGET}.yaml"
 LOCKFILE="${INBOX}.lock"
 
