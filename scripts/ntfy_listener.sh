@@ -149,9 +149,10 @@ while true; do
         EVENT=$(echo "$line" | parse_json event)
         [ "$EVENT" != "message" ] && continue
 
-        # Skip outbound messages (sent by our own scripts/ntfy.sh)
+        # Skip messages sent by THIS machine's ntfy.sh (match hostname tag)
         TAGS=$(echo "$line" | parse_tags)
-        echo "$TAGS" | grep -q "outbound" && continue
+        MY_TAG="from_$(hostname -s | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_' '_')"
+        echo "$TAGS" | grep -q "$MY_TAG" && continue
 
         # Extract message content
         MSG=$(echo "$line" | parse_json message)
@@ -167,9 +168,6 @@ while true; do
             echo "[$(date)] [ntfy_listener] WARNING: failed to append ntfy_inbox entry" >&2
             continue
         fi
-
-        # Auto-reply acknowledgement
-        bash "$SCRIPT_DIR/scripts/ntfy.sh" "📱受信: $MSG"
 
         # Wake shogun via inbox (ntfy処理は将軍が直接受信)
         bash "$SCRIPT_DIR/scripts/inbox_write.sh" shogun \

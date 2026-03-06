@@ -21,5 +21,9 @@ while IFS= read -r line; do
     [ -n "$line" ] && AUTH_ARGS+=("$line")
 done < <(ntfy_get_auth_args "$SCRIPT_DIR/config/ntfy_auth.env")
 
+# Machine-specific tag so listener on THIS machine skips its own messages
+# but receives messages from OTHER machines
+ORIGIN_TAG="from_$(hostname -s | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_' '_')"
+
 # shellcheck disable=SC2086
-curl -s "${AUTH_ARGS[@]}" -H "Tags: outbound" -d "$1" "https://ntfy.sh/$TOPIC" > /dev/null
+curl -s "${AUTH_ARGS[@]}" -H "Tags: $ORIGIN_TAG" -d "$1" "https://ntfy.sh/$TOPIC" > /dev/null
