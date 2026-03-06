@@ -1,0 +1,15 @@
+report:
+  task_id: subtask_182a
+  parent_cmd: cmd_182
+  agent: ashigaru1
+  status: done
+  timestamp: "2026-03-06T10:01:10"
+  summary: |
+    instructions/shogun.md の「Cmd Completion Report Relay」セクションに手順3を追記した。
+    手順2の後に daishogun_to_shogun.yaml の該当cmdのstatusをdoneに更新する手順を追加。
+    将軍がdaishogun_to_shogun.yamlのstatus管理責任者となることを明記。
+  deliverables:
+    - path: "/home/mino/chrono/repos/multi-agent-shogun/instructions/shogun.md"
+      change: "Cmd Completion Report Relay セクションに手順3を追記"
+  skill_candidate:
+    found: false

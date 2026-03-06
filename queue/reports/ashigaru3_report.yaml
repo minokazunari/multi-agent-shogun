@@ -1,37 +1,13 @@
 report:
-  task_id: subtask_142a
-  parent_cmd: cmd_142
+  task_id: subtask_182c
+  parent_cmd: cmd_182
+  agent: ashigaru3
   status: done
-  summary: "englead iOSビルドエラー修正完了。AppDelegate.swiftの不要なimportとlegacyコールバック削除でビルド成功（45.6MB）。"
-
+  timestamp: "2026-03-06T10:00:00"
+  summary: |
+    queue/daishogun_to_shogun.yaml の cmd_180 status を pending → done に更新完了。
   result:
-    flutter_version: "3.24.5 (channel stable)"
-    root_cause: |
-      AppDelegate.swiftに `import flutter_local_notifications` と
-      `FlutterLocalNotificationsPlugin.setPluginRegistrantCallback` の呼び出しが残存。
-      flutter_local_notifications v17.x + Flutter 3.x では、GeneratedPluginRegistrant.register(with: self)
-      が全プラグインを自動登録するため、このコールバック設定は不要かつ非推奨。
-      また、実際のヘッダー定義は `setRegisterPlugins:` であり `setPluginRegistrantCallback` は
-      存在しないため、import成功しても呼び出し時にビルドエラーになる構造だった。
-
-    fix_applied: |
-      AppDelegate.swift から以下を削除:
-      1. `import flutter_local_notifications` (line 3)
-      2. `FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in
-           GeneratedPluginRegistrant.register(with: registry)
-         }` ブロック (lines 11-13)
-      残存コード（GeneratedPluginRegistrant.register(with: self)）で全プラグイン自動登録。
-
-    build_result: "成功 — Built build/ios/iphoneos/Runner.app (45.6MB)"
-
-    files_modified:
-      - path: "ios/Runner/AppDelegate.swift"
-        change: "import flutter_local_notifications削除、setPluginRegistrantCallbackブロック削除"
-
-    pod_install_needed: false
-    flutter_clean_needed: false
-
+    file_updated: "queue/daishogun_to_shogun.yaml"
+    change: "cmd_180 status: pending → done"
   skill_candidate:
     found: false
-
-  timestamp: "2026-02-27T21:45:00+09:00"

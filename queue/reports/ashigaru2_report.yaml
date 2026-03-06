@@ -1,0 +1,19 @@
+worker_id: ashigaru2
+task_id: subtask_182b
+parent_cmd: cmd_182
+timestamp: "2026-03-06T10:05:00"
+status: done
+result:
+  summary: "sync_dashboard.sh のcrontab定期実行設定完了。*/2 * * * * で2分毎実行。ただしスクリプト自体にgitignore問題あり（詳細下記）"
+  cron_entry: "*/2 * * * * /home/mino/chrono/repos/multi-agent-shogun/scripts/sync_dashboard.sh >> /tmp/sync_dashboard.log 2>&1"
+  crontab_verified: true
+  manual_run_result: |
+    exit code 1 — gitignoreエラー。
+    dashboard.md と queue/reports/ashigaru*.yaml が .gitignore に含まれているため
+    git add で弾かれてスクリプトが失敗する（set -e で即終了）。
+    cron設定は正常完了。スクリプト本体の修正が別途必要。
+  concerns:
+    - "sync_dashboard.sh の git add がgitignoreにより失敗する（exit 1）"
+    - ".gitignore修正 または git add -f 対応が必要"
+skill_candidate:
+  found: false
